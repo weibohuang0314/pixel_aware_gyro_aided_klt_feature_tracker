@@ -1095,7 +1095,7 @@ configure:16609: $? = 0
 configure:16609: result: yes
 configure:16616: checking for dladdr
 configure:16616: g++ -o conftest -g -O2   conftest.cpp  >&5
-/tmp/ccRrcERb.o: In function `main':
+/tmp/cc8scSNh.o: In function `main':
 /home/hri/rosbuild_ws/package_dir/pixel_aware_gyro_aided_klt_feature_tracker/Thirdparty/glog-master/conftest.cpp:70: undefined reference to `dladdr'
 collect2: error: ld returned 1 exit status
 configure:16616: $? = 1
@@ -1276,7 +1276,7 @@ conftest.c:48:22: warning: null argument where non-null required (argument 1) [-
                       pthread_create(0,0,0,0); pthread_cleanup_pop(0);
                       ^~~~~~~~~~~~~~
 conftest.c:48:22: warning: null argument where non-null required (argument 3) [-Wnonnull]
-/tmp/ccohS6uy.o: In function `main':
+/tmp/ccNXeYzE.o: In function `main':
 /home/hri/rosbuild_ws/package_dir/pixel_aware_gyro_aided_klt_feature_tracker/Thirdparty/glog-master/conftest.c:46: undefined reference to `pthread_join'
 /home/hri/rosbuild_ws/package_dir/pixel_aware_gyro_aided_klt_feature_tracker/Thirdparty/glog-master/conftest.c:47: undefined reference to `__pthread_register_cancel'
 /home/hri/rosbuild_ws/package_dir/pixel_aware_gyro_aided_klt_feature_tracker/Thirdparty/glog-master/conftest.c:48: undefined reference to `pthread_create'

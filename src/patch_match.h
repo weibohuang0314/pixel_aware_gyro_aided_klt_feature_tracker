@@ -13,18 +13,18 @@
 #include <functional>
 //#include "Thirdparty/glog/include/glog/logging.h"
 
-//#include "GyroPredictMatcher.h"
+//#include "GyroAidedTracker.h"
 
 using namespace std;
 using namespace cv;
 
 
-class GyroPredictMatcher;
+class GyroAidedTracker;
 
 class PatchMatch
 {
 public:
-    PatchMatch(GyroPredictMatcher* pMatcher_,
+    PatchMatch(GyroAidedTracker* pMatcher_,
                int halfPatchSize_, int iterations_, int pyramids_,
                bool bHasGyroPredictInitial_, bool bInverse_,
                bool bConsiderIllumination_, bool bConsiderAffineDeformation_,
@@ -59,7 +59,7 @@ public:
 
 
 private:
-    GyroPredictMatcher* mpMatcher;
+    GyroAidedTracker* mpMatcher;
     int mN;
     int mHalfPatchSize;
     int mIterations;

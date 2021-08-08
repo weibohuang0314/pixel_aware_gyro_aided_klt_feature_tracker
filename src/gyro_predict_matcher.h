@@ -28,7 +28,7 @@ using namespace std;
 using namespace cv;
 
 
-class GyroPredictMatcher
+class GyroAidedTracker
 {
 
 public:
@@ -81,8 +81,8 @@ public:
     };
 
 public:
-//    GyroPredictMatcher();
-    GyroPredictMatcher(double t, double t_ref, const cv::Mat &imgGrayRef_, const cv::Mat &imgGrayCur_,
+//    GyroAidedTracker();
+    GyroAidedTracker(double t, double t_ref, const cv::Mat &imgGrayRef_, const cv::Mat &imgGrayCur_,
                        const std::vector<cv::KeyPoint> &vKeysRef_, const std::vector<cv::KeyPoint> &vKeysCur_,
                        const std::vector<cv::KeyPoint> &vKeysUnRef_, const std::vector<cv::KeyPoint> &vKeysUnCur_,
                        const std::vector<IMU::Point> &vImuFromLastFrame, const cv::Point3f &bias_,
@@ -92,7 +92,7 @@ public:
                        int halfPatchSize_ = 5,
                        int predictMethod_ = 0);
 
-    GyroPredictMatcher(const Frame& pFrameRef, const Frame& pFrameCur,
+    GyroAidedTracker(const Frame& pFrameRef, const Frame& pFrameCur,
                        const IMU::Calib& imuCalib,
                        const cv::Point3f &biasg_,
                        const cv::Mat &normalizeTable,
@@ -122,7 +122,7 @@ public:
 
     void SetType(eType type_){mType = type_;}
 
-    void Display(bool isKeyFrame = false);
+//    void Display(bool isKeyFrame = false);
 
     void IntegrateGyroMeasurements();
 

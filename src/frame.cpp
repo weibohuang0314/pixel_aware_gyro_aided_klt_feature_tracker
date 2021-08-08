@@ -184,7 +184,7 @@ void Frame::DetectKeyPoints()
 }
 
 // temp: read features from file. the feature is detected by SuperPoint (Paper - "SuperPoint: Self-supervised interest point detection and description")
-void Frame::LoadKeypointFromSuperPoint(std::string path)
+void Frame::LoadDetectedKeypointFromFile(std::string path)
 {
     // predict from gyro-aided tracking
     //SetPredictKeyPointsAndMask();
@@ -281,352 +281,249 @@ void Frame::UndistortPoints(std::vector<cv::Point2f> &corners)
     }
 }
 
-// display on rectified iamge
-void Frame::Display(std::string winname)
-{
-    if(curFrameWithoutGeometryValid == nullptr){    // display lastFrame and currentFrame
-        int h = mpCameraParams->height, w = mpCameraParams->width;
-        cv::Mat im_out = cv::Mat(h, 2 * w, CV_8UC1, cv::Scalar(0));
-        mpLastFrame->mGray.copyTo(im_out.rowRange(0, h).colRange(0, w));
-        mGray.copyTo(im_out.rowRange(0, h).colRange(w, 2*w));
+//// display on rectified iamge
+//void Frame::Display(std::string winname)
+//{
+//    if(curFrameWithoutGeometryValid == nullptr){    // display lastFrame and currentFrame
+//        int h = mpCameraParams->height, w = mpCameraParams->width;
+//        cv::Mat im_out = cv::Mat(h, 2 * w, CV_8UC1, cv::Scalar(0));
+//        mpLastFrame->mGray.copyTo(im_out.rowRange(0, h).colRange(0, w));
+//        mGray.copyTo(im_out.rowRange(0, h).colRange(w, 2*w));
 
-        if(im_out.channels() < 3) //this should be always true
-            cv::cvtColor(im_out, im_out, CV_GRAY2BGR);
+//        if(im_out.channels() < 3) //this should be always true
+//            cv::cvtColor(im_out, im_out, CV_GRAY2BGR);
 
-        int cnt_tracked = 0, cnt_new_detected = 0;
-        std::set<int> sPtIndexInLastFrame;
-        for(size_t i = 0, iend = mvKeys.size(); i < iend; i++){
-            cv::Point2f pt_cur = mvKeys[i].pt + cv::Point2f(w,0);
-            if(mvKeys[i].size > 1){ // this keypoint is tracked by gyro prediction and patch matched.
-                cnt_tracked ++;
+//        int cnt_tracked = 0, cnt_new_detected = 0;
+//        std::set<int> sPtIndexInLastFrame;
+//        for(size_t i = 0, iend = mvKeys.size(); i < iend; i++){
+//            cv::Point2f pt_cur = mvKeys[i].pt + cv::Point2f(w,0);
+//            if(mvKeys[i].size > 1){ // this keypoint is tracked by gyro prediction and patch matched.
+//                cnt_tracked ++;
 
-                sPtIndexInLastFrame.insert(mvPtIndexInLastFrame[i]);
-                cv::Point2f pt_ref = mpLastFrame->mvKeys[mvPtIndexInLastFrame[i]].pt + cv::Point2f(w,0);
-                cv::line(im_out, pt_ref, pt_cur, cv::Scalar(255,255,255), 1);
+//                sPtIndexInLastFrame.insert(mvPtIndexInLastFrame[i]);
+//                cv::Point2f pt_ref = mpLastFrame->mvKeys[mvPtIndexInLastFrame[i]].pt + cv::Point2f(w,0);
+//                cv::line(im_out, pt_ref, pt_cur, cv::Scalar(255,255,255), 1);
 
-                //if (!mvNcc.empty() && mvNcc[mvPtIndexInLastFrame[i]] < 0.2){
-                //    // negetive correlation
-                //    cv::circle(im_out, pt_cur, 3, cv::Scalar(255, 0, 0), -1);   // blue, the features tracked from last frame
-                //    cv::circle(im_out, mpLastFrame->mvKeys[mvPtIndexInLastFrame[i]].pt, 3, cv::Scalar(255, 0, 0), -1);  // corresponding features in last frame
-                //} else {
-                    cv::circle(im_out, pt_cur, 2, cv::Scalar(0, 255, 0), -1);   // green, the features tracked from last frame
-                    cv::circle(im_out, mpLastFrame->mvKeys[mvPtIndexInLastFrame[i]].pt, 2, cv::Scalar(0, 255, 0), -1);  // corresponding features in last frame
-                //}
+//                //if (!mvNcc.empty() && mvNcc[mvPtIndexInLastFrame[i]] < 0.2){
+//                //    // negetive correlation
+//                //    cv::circle(im_out, pt_cur, 3, cv::Scalar(255, 0, 0), -1);   // blue, the features tracked from last frame
+//                //    cv::circle(im_out, mpLastFrame->mvKeys[mvPtIndexInLastFrame[i]].pt, 3, cv::Scalar(255, 0, 0), -1);  // corresponding features in last frame
+//                //} else {
+//                    cv::circle(im_out, pt_cur, 2, cv::Scalar(0, 255, 0), -1);   // green, the features tracked from last frame
+//                    cv::circle(im_out, mpLastFrame->mvKeys[mvPtIndexInLastFrame[i]].pt, 2, cv::Scalar(0, 255, 0), -1);  // corresponding features in last frame
+//                //}
 
-                // for gyro predicted points
-                if(!mvPtGyroPredictUn.empty()){
-                    cv::Point2f pt_gyro = mvPtGyroPredictUn[i] + cv::Point2f(w,0);
-                    cv::circle(im_out, pt_gyro, 2, cv::Scalar(0, 255, 255), 1);
-                }
+//                // for gyro predicted points
+//                if(!mvPtGyroPredictUn.empty()){
+//                    cv::Point2f pt_gyro = mvPtGyroPredictUn[i] + cv::Point2f(w,0);
+//                    cv::circle(im_out, pt_gyro, 2, cv::Scalar(0, 255, 255), 1);
+//                }
 
-            }
-            else {  // new predict feature
-                cnt_new_detected ++;
-                cv::circle(im_out, pt_cur, 2, cv::Scalar(255, 0, 0), -1);   // blue, new detected feature
-            }
-        }
+//            }
+//            else {  // new predict feature
+//                cnt_new_detected ++;
+//                cv::circle(im_out, pt_cur, 2, cv::Scalar(255, 0, 0), -1);   // blue, new detected feature
+//            }
+//        }
 
-        // draw the features in the lastframe that unsuccessful tracked in current frame
-        for(int i = 0, iend = mpLastFrame->mvKeys.size(); i < iend; i++){
-            if(sPtIndexInLastFrame.find(i) != sPtIndexInLastFrame.end())
-                continue;
-            cv::Point2f pt_ref = mpLastFrame->mvKeys[i].pt;
-            cv::circle(im_out, pt_ref, 2, cv::Scalar(0, 0, 255), -1);   // red
-        }
+//        // draw the features in the lastframe that unsuccessful tracked in current frame
+//        for(int i = 0, iend = mpLastFrame->mvKeys.size(); i < iend; i++){
+//            if(sPtIndexInLastFrame.find(i) != sPtIndexInLastFrame.end())
+//                continue;
+//            cv::Point2f pt_ref = mpLastFrame->mvKeys[i].pt;
+//            cv::circle(im_out, pt_ref, 2, cv::Scalar(0, 0, 255), -1);   // red
+//        }
 
-        std::stringstream s;
-        s << std::fixed << std::setprecision(4)
-          << "Id: " << mnId
-          << ", T: " << std::to_string(mTimeStamp)
-          << ", RefF kp num: " << mvStatus.size()
-          << ", CurF kp num: " << cnt_tracked + cnt_new_detected
-          << " (tracked: " << cnt_tracked << ", new det.: " << cnt_new_detected
-          << ")" << ", track rate: " << 100.0 * cnt_tracked / mvStatus.size() << "%";
+//        std::stringstream s;
+//        s << std::fixed << std::setprecision(4)
+//          << "Id: " << mnId
+//          << ", T: " << std::to_string(mTimeStamp)
+//          << ", RefF kp num: " << mvStatus.size()
+//          << ", CurF kp num: " << cnt_tracked + cnt_new_detected
+//          << " (tracked: " << cnt_tracked << ", new det.: " << cnt_new_detected
+//          << ")" << ", track rate: " << 100.0 * cnt_tracked / mvStatus.size() << "%";
 
-        cv::Size textSize = cv::getTextSize(s.str(),cv::FONT_HERSHEY_PLAIN,1,1,0);
-        cv::Mat imText = cv::Mat(im_out.rows + textSize.height + 10, im_out.cols, im_out.type());
-        im_out.copyTo(imText.rowRange(0, im_out.rows).colRange(0, im_out.cols));
-        imText.rowRange(im_out.rows, imText.rows) = cv::Mat::zeros(textSize.height + 10, im_out.cols, im_out.type());
-        cv::putText(imText, s.str(), cv::Point(5, imText.rows-5), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(255,255,255),1.0);
+//        cv::Size textSize = cv::getTextSize(s.str(),cv::FONT_HERSHEY_PLAIN,1,1,0);
+//        cv::Mat imText = cv::Mat(im_out.rows + textSize.height + 10, im_out.cols, im_out.type());
+//        im_out.copyTo(imText.rowRange(0, im_out.rows).colRange(0, im_out.cols));
+//        imText.rowRange(im_out.rows, imText.rows) = cv::Mat::zeros(textSize.height + 10, im_out.cols, im_out.type());
+//        cv::putText(imText, s.str(), cv::Point(5, imText.rows-5), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(255,255,255),1.0);
 
-        cv::putText(imText, "reference frame", cv::Point(5, 15), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(255,255,255),1.0);
-        cv::putText(imText, "current frame with geometry validation", cv::Point(5 + w, 15), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(255,255,255),1.0);
+//        cv::putText(imText, "reference frame", cv::Point(5, 15), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(255,255,255),1.0);
+//        cv::putText(imText, "current frame with geometry validation", cv::Point(5 + w, 15), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(255,255,255),1.0);
 
-        cv::imshow(winname, imText);
-        cv::waitKey(1);
-    }
-    else { // display lastFrame, currentFrame without geometry validation, and currentFrame
-        int h = mpCameraParams->height, w = mpCameraParams->width;
-        cv::Mat im_out = cv::Mat(h, 3 * w, CV_8UC1, cv::Scalar(0));
-        mpLastFrame->mGray.copyTo(im_out.rowRange(0, h).colRange(0, w));
-        curFrameWithoutGeometryValid->mGray.copyTo(im_out.rowRange(0, h).colRange(w, 2*w));
-        mGray.copyTo(im_out.rowRange(0, h).colRange(2*w, 3*w));
+//        cv::imshow(winname, imText);
+//        cv::waitKey(1);
+//    }
+//    else { // display lastFrame, currentFrame without geometry validation, and currentFrame
+//        int h = mpCameraParams->height, w = mpCameraParams->width;
+//        cv::Mat im_out = cv::Mat(h, 3 * w, CV_8UC1, cv::Scalar(0));
+//        mpLastFrame->mGray.copyTo(im_out.rowRange(0, h).colRange(0, w));
+//        curFrameWithoutGeometryValid->mGray.copyTo(im_out.rowRange(0, h).colRange(w, 2*w));
+//        mGray.copyTo(im_out.rowRange(0, h).colRange(2*w, 3*w));
 
-        if(im_out.channels() < 3) //this should be always true
-            cv::cvtColor(im_out, im_out, CV_GRAY2BGR);
+//        if(im_out.channels() < 3) //this should be always true
+//            cv::cvtColor(im_out, im_out, CV_GRAY2BGR);
 
-        int cnt_tracked = 0, cnt_new_detected = 0;
-        std::set<int> sPtIndexInLastFrame;
-        for(size_t i = 0, iend = mvKeysUn.size(); i < iend; i++){
-            cv::Point2f pt_cur = mvKeysUn[i].pt + cv::Point2f(2*w,0);
-            if(mvKeysUn[i].size > 1){ // this keypoint is tracked by gyro prediction and patch matched.
-                cnt_tracked ++;
+//        int cnt_tracked = 0, cnt_new_detected = 0;
+//        std::set<int> sPtIndexInLastFrame;
+//        for(size_t i = 0, iend = mvKeysUn.size(); i < iend; i++){
+//            cv::Point2f pt_cur = mvKeysUn[i].pt + cv::Point2f(2*w,0);
+//            if(mvKeysUn[i].size > 1){ // this keypoint is tracked by gyro prediction and patch matched.
+//                cnt_tracked ++;
 
-                sPtIndexInLastFrame.insert(mvPtIndexInLastFrame[i]);
-                cv::Point2f pt_ref = mpLastFrame->mvKeysUn[mvPtIndexInLastFrame[i]].pt + cv::Point2f(2*w,0);
-                cv::line(im_out, pt_ref, pt_cur, cv::Scalar(255,255,255), 1);
+//                sPtIndexInLastFrame.insert(mvPtIndexInLastFrame[i]);
+//                cv::Point2f pt_ref = mpLastFrame->mvKeysUn[mvPtIndexInLastFrame[i]].pt + cv::Point2f(2*w,0);
+//                cv::line(im_out, pt_ref, pt_cur, cv::Scalar(255,255,255), 1);
 
-                //if (!mvNcc.empty() && mvNcc[mvPtIndexInLastFrame[i]] < 0.2){
-                //    // negetive correlation
-                //    cv::circle(im_out, pt_cur, 3, cv::Scalar(255, 0, 0), -1);   // blue, the features tracked from last frame
-                //    cv::circle(im_out, mpLastFrame->mvKeysUn[mvPtIndexInLastFrame[i]].pt, 3, cv::Scalar(255, 0, 0), -1);  // corresponding features in last frame
-                //} else {
-                cv::circle(im_out, pt_cur, 2, cv::Scalar(0, 255, 0), -1);   // green, the features tracked from last frame
-                cv::circle(im_out, mpLastFrame->mvKeysUn[mvPtIndexInLastFrame[i]].pt, 2, cv::Scalar(0, 255, 0), -1);  // corresponding features in last frame
-                //}
+//                //if (!mvNcc.empty() && mvNcc[mvPtIndexInLastFrame[i]] < 0.2){
+//                //    // negetive correlation
+//                //    cv::circle(im_out, pt_cur, 3, cv::Scalar(255, 0, 0), -1);   // blue, the features tracked from last frame
+//                //    cv::circle(im_out, mpLastFrame->mvKeysUn[mvPtIndexInLastFrame[i]].pt, 3, cv::Scalar(255, 0, 0), -1);  // corresponding features in last frame
+//                //} else {
+//                cv::circle(im_out, pt_cur, 2, cv::Scalar(0, 255, 0), -1);   // green, the features tracked from last frame
+//                cv::circle(im_out, mpLastFrame->mvKeysUn[mvPtIndexInLastFrame[i]].pt, 2, cv::Scalar(0, 255, 0), -1);  // corresponding features in last frame
+//                //}
 
-                // Draw the affine deformated rectangles for the matched keypoints.
-                if(mvvFlowsPredictCorners[mvPtIndexInLastFrame[i]].size() > 0){
-                    // on current frame
-                    cv::Point2f pt_tl = mvvFlowsPredictCorners[mvPtIndexInLastFrame[i]][0] + pt_cur;
-                    cv::Point2f pt_tr = mvvFlowsPredictCorners[mvPtIndexInLastFrame[i]][1] + pt_cur;
-                    cv::Point2f pt_bl = mvvFlowsPredictCorners[mvPtIndexInLastFrame[i]][2] + pt_cur;
-                    cv::Point2f pt_br = mvvFlowsPredictCorners[mvPtIndexInLastFrame[i]][3] + pt_cur;
+//                // Draw the affine deformated rectangles for the matched keypoints.
+//                if(mvvFlowsPredictCorners[mvPtIndexInLastFrame[i]].size() > 0){
+//                    // on current frame
+//                    cv::Point2f pt_tl = mvvFlowsPredictCorners[mvPtIndexInLastFrame[i]][0] + pt_cur;
+//                    cv::Point2f pt_tr = mvvFlowsPredictCorners[mvPtIndexInLastFrame[i]][1] + pt_cur;
+//                    cv::Point2f pt_bl = mvvFlowsPredictCorners[mvPtIndexInLastFrame[i]][2] + pt_cur;
+//                    cv::Point2f pt_br = mvvFlowsPredictCorners[mvPtIndexInLastFrame[i]][3] + pt_cur;
 
-                    cv::Scalar scalar = cv::Scalar(0,255,0);
-                    cv::line(im_out, pt_tl, pt_tr, scalar, 1);
-                    cv::line(im_out, pt_tr, pt_br, scalar, 1);
-                    cv::line(im_out, pt_bl, pt_br, scalar, 1);
-                    cv::line(im_out, pt_tl, pt_bl, scalar, 1);
+//                    cv::Scalar scalar = cv::Scalar(0,255,0);
+//                    cv::line(im_out, pt_tl, pt_tr, scalar, 1);
+//                    cv::line(im_out, pt_tr, pt_br, scalar, 1);
+//                    cv::line(im_out, pt_bl, pt_br, scalar, 1);
+//                    cv::line(im_out, pt_tl, pt_bl, scalar, 1);
 
-                    // on reference frame
-                    cv::Point2f lr = pt_tr - pt_tl; int w = int(sqrt(lr.x * lr.x + lr.y * lr.y)/2.0 + 0.5);
-                    pt_tl = cv::Point2f(-w, -w) + mpLastFrame->mvKeysUn[mvPtIndexInLastFrame[i]].pt;
-                    pt_tr = cv::Point2f(w, -w) + mpLastFrame->mvKeysUn[mvPtIndexInLastFrame[i]].pt;
-                    pt_bl = cv::Point2f(-w, w) + mpLastFrame->mvKeysUn[mvPtIndexInLastFrame[i]].pt;
-                    pt_br = cv::Point2f(w, w) + mpLastFrame->mvKeysUn[mvPtIndexInLastFrame[i]].pt;
-                    cv::line(im_out, pt_tl, pt_tr, scalar, 1);
-                    cv::line(im_out, pt_tr, pt_br, scalar, 1);
-                    cv::line(im_out, pt_bl, pt_br, scalar, 1);
-                    cv::line(im_out, pt_tl, pt_bl, scalar, 1);
-                }
+//                    // on reference frame
+//                    cv::Point2f lr = pt_tr - pt_tl; int w = int(sqrt(lr.x * lr.x + lr.y * lr.y)/2.0 + 0.5);
+//                    pt_tl = cv::Point2f(-w, -w) + mpLastFrame->mvKeysUn[mvPtIndexInLastFrame[i]].pt;
+//                    pt_tr = cv::Point2f(w, -w) + mpLastFrame->mvKeysUn[mvPtIndexInLastFrame[i]].pt;
+//                    pt_bl = cv::Point2f(-w, w) + mpLastFrame->mvKeysUn[mvPtIndexInLastFrame[i]].pt;
+//                    pt_br = cv::Point2f(w, w) + mpLastFrame->mvKeysUn[mvPtIndexInLastFrame[i]].pt;
+//                    cv::line(im_out, pt_tl, pt_tr, scalar, 1);
+//                    cv::line(im_out, pt_tr, pt_br, scalar, 1);
+//                    cv::line(im_out, pt_bl, pt_br, scalar, 1);
+//                    cv::line(im_out, pt_tl, pt_bl, scalar, 1);
+//                }
 
-            }
-            else {  // new predict feature
-                cnt_new_detected ++;
-                cv::circle(im_out, pt_cur, 2, cv::Scalar(255, 0, 0), -1);   // blue, new detected feature
-            }
-        }
+//            }
+//            else {  // new predict feature
+//                cnt_new_detected ++;
+//                cv::circle(im_out, pt_cur, 2, cv::Scalar(255, 0, 0), -1);   // blue, new detected feature
+//            }
+//        }
 
-        // draw the lost tracks in the lastframe
-        for(int i = 0, iend = mpLastFrame->mvKeysUn.size(); i < iend; i++){
-            if(sPtIndexInLastFrame.find(i) != sPtIndexInLastFrame.end())
-                continue;
-            cv::Point2f pt_ref = mpLastFrame->mvKeysUn[i].pt;
-            cv::circle(im_out, pt_ref, 2, cv::Scalar(0, 0, 255), -1);   // red
-        }
+//        // draw the lost tracks in the lastframe
+//        for(int i = 0, iend = mpLastFrame->mvKeysUn.size(); i < iend; i++){
+//            if(sPtIndexInLastFrame.find(i) != sPtIndexInLastFrame.end())
+//                continue;
+//            cv::Point2f pt_ref = mpLastFrame->mvKeysUn[i].pt;
+//            cv::circle(im_out, pt_ref, 2, cv::Scalar(0, 0, 255), -1);   // red
+//        }
 
-        // middle results
-        int cnt_gyro_predict = 0;
-        int cnt_total_tracks = 0, cnt_bad_tracks = 0;
-        //double error_gyro_predict_patch_match = 0;
-        // for curFrameWithoutGeometryValid
-        // draw the gyro predicd and patch-matched features that do not filter out by geometry validation
-        for(size_t i = 0, iend = curFrameWithoutGeometryValid->mvStatus.size(); i < iend; i++){
-            if(!curFrameWithoutGeometryValid->mvStatus[i])
-                continue;
+//        // middle results
+//        int cnt_gyro_predict = 0;
+//        int cnt_total_tracks = 0, cnt_bad_tracks = 0;
+//        //double error_gyro_predict_patch_match = 0;
+//        // for curFrameWithoutGeometryValid
+//        // draw the gyro predicd and patch-matched features that do not filter out by geometry validation
+//        for(size_t i = 0, iend = curFrameWithoutGeometryValid->mvStatus.size(); i < iend; i++){
+//            if(!curFrameWithoutGeometryValid->mvStatus[i])
+//                continue;
 
-            cv::Point2f pt_cur = curFrameWithoutGeometryValid->mvPtPredictUn[i] + cv::Point2f(w,0);
-            cv::Point2f pt_ref = mpLastFrame->mvKeysUn[i].pt + cv::Point2f(w,0);
-            cv::line(im_out, pt_ref, pt_cur, cv::Scalar(255,255,255), 1);
+//            cv::Point2f pt_cur = curFrameWithoutGeometryValid->mvPtPredictUn[i] + cv::Point2f(w,0);
+//            cv::Point2f pt_ref = mpLastFrame->mvKeysUn[i].pt + cv::Point2f(w,0);
+//            cv::line(im_out, pt_ref, pt_cur, cv::Scalar(255,255,255), 1);
 
-            cv::circle(im_out, pt_cur, 2, cv::Scalar(0, 255, 0), -1);   // green, the features tracked from last frame
-            cnt_total_tracks ++;
+//            cv::circle(im_out, pt_cur, 2, cv::Scalar(0, 255, 0), -1);   // green, the features tracked from last frame
+//            cnt_total_tracks ++;
 
-            if(sPtIndexInLastFrame.find(i) == sPtIndexInLastFrame.end()){
-                cv::circle(im_out, pt_cur, 5, cv::Scalar(0, 0, 255), 1);   // red, the points that would be filter-out
-                cnt_bad_tracks ++;
-            }
-        }
+//            if(sPtIndexInLastFrame.find(i) == sPtIndexInLastFrame.end()){
+//                cv::circle(im_out, pt_cur, 5, cv::Scalar(0, 0, 255), 1);   // red, the points that would be filter-out
+//                cnt_bad_tracks ++;
+//            }
+//        }
 
-        if(!curFrameWithoutGeometryValid->mvPtGyroPredictUn.empty()){
-            for(size_t i = 0, iend = curFrameWithoutGeometryValid->mvPtGyroPredictUn.size(); i < iend; i++){
-                cv::Point2f pt_gyro = curFrameWithoutGeometryValid->mvPtGyroPredictUn[i] + cv::Point2f(w,0);
-                if(pt_gyro.x != 0 && pt_gyro.y != 0){
-                    cv::circle(im_out, pt_gyro, 2, cv::Scalar(0, 255, 255), 1); // yellow circle
-                    cnt_gyro_predict ++;
+//        if(!curFrameWithoutGeometryValid->mvPtGyroPredictUn.empty()){
+//            for(size_t i = 0, iend = curFrameWithoutGeometryValid->mvPtGyroPredictUn.size(); i < iend; i++){
+//                cv::Point2f pt_gyro = curFrameWithoutGeometryValid->mvPtGyroPredictUn[i] + cv::Point2f(w,0);
+//                if(pt_gyro.x != 0 && pt_gyro.y != 0){
+//                    cv::circle(im_out, pt_gyro, 2, cv::Scalar(0, 255, 255), 1); // yellow circle
+//                    cnt_gyro_predict ++;
 
-//                    cv::Point2f pt_patch_match = curFrameWithoutGeometryValid->mvPtPredict[i] + cv::Point2f(w,0);
-//                    cv::Point2f ept = pt_gyro - pt_patch_match;
-//                    error_gyro_predict_patch_match += std::sqrt(ept.x * ept.x + ept.y * ept.y);
-                }
+////                    cv::Point2f pt_patch_match = curFrameWithoutGeometryValid->mvPtPredict[i] + cv::Point2f(w,0);
+////                    cv::Point2f ept = pt_gyro - pt_patch_match;
+////                    error_gyro_predict_patch_match += std::sqrt(ept.x * ept.x + ept.y * ept.y);
+//                }
 
-            }
-        }
+//            }
+//        }
 
-        std::stringstream s;
-        s << std::fixed << std::setprecision(4)
-          << "Id: " << mnId
-          << ", T: " << std::to_string(mTimeStamp)
-          << ", RefF kp Num: " << mvStatus.size()
-          << ", CurF kp Num: " << cnt_tracked + cnt_new_detected
-          << " (tracked: " << cnt_tracked << ", new det.: " << cnt_new_detected
-          << ")" << ", Track Rate: " << 100.0 * cnt_tracked / mvStatus.size() << "%"
-          //<< ", Avg Err. Gyro Pred. Patch Match: " << error_gyro_predict_patch_match / cnt_gyro_predict
-             ;
+//        std::stringstream s;
+//        s << std::fixed << std::setprecision(4)
+//          << "Id: " << mnId
+//          << ", T: " << std::to_string(mTimeStamp)
+//          << ", RefF kp Num: " << mvStatus.size()
+//          << ", CurF kp Num: " << cnt_tracked + cnt_new_detected
+//          << " (tracked: " << cnt_tracked << ", new det.: " << cnt_new_detected
+//          << ")" << ", Track Rate: " << 100.0 * cnt_tracked / mvStatus.size() << "%"
+//          //<< ", Avg Err. Gyro Pred. Patch Match: " << error_gyro_predict_patch_match / cnt_gyro_predict
+//             ;
 
-        cv::Size textSize = cv::getTextSize(s.str(),cv::FONT_HERSHEY_PLAIN,1,1,0);
-        cv::Mat imText = cv::Mat(im_out.rows + textSize.height + 10, im_out.cols, im_out.type());
-        im_out.copyTo(imText.rowRange(0, im_out.rows).colRange(0, im_out.cols));
-        imText.rowRange(im_out.rows, imText.rows) = cv::Mat::zeros(textSize.height + 10, im_out.cols, im_out.type());
+//        cv::Size textSize = cv::getTextSize(s.str(),cv::FONT_HERSHEY_PLAIN,1,1,0);
+//        cv::Mat imText = cv::Mat(im_out.rows + textSize.height + 10, im_out.cols, im_out.type());
+//        im_out.copyTo(imText.rowRange(0, im_out.rows).colRange(0, im_out.cols));
+//        imText.rowRange(im_out.rows, imText.rows) = cv::Mat::zeros(textSize.height + 10, im_out.cols, im_out.type());
 
-        cv::Scalar txt_color_fg(255, 255, 255);
-        cv::Scalar txt_color_bg(0, 0, 0);
+//        cv::Scalar txt_color_fg(255, 255, 255);
+//        cv::Scalar txt_color_bg(0, 0, 0);
 
-        cv::putText(imText, s.str(), cv::Point(5, imText.rows-5), cv::FONT_HERSHEY_PLAIN, 1, txt_color_fg, 1.0, cv::LINE_AA);
+//        cv::putText(imText, s.str(), cv::Point(5, imText.rows-5), cv::FONT_HERSHEY_PLAIN, 1, txt_color_fg, 1.0, cv::LINE_AA);
 
-        cv::putText(imText, "reference frame", cv::Point(5, 15), cv::FONT_HERSHEY_PLAIN, 1, txt_color_bg, 2.0, cv::LINE_AA);
-        cv::putText(imText, "reference frame", cv::Point(5, 15), cv::FONT_HERSHEY_PLAIN, 1, txt_color_fg, 1.0, cv::LINE_AA);
-        if(!mvPtGyroPredictUn.empty()){
-            std::string str = "cur. frame: yellow circle - gyro predicted features (" + std::to_string(cnt_gyro_predict) + ")";
-            cv::putText(imText, str, cv::Point(5 + w, 15), cv::FONT_HERSHEY_PLAIN, 1, txt_color_bg, 2.0, cv::LINE_AA);
-            cv::putText(imText, str, cv::Point(5 + w, 15), cv::FONT_HERSHEY_PLAIN, 1, txt_color_fg, 1.0, cv::LINE_AA);
+//        cv::putText(imText, "reference frame", cv::Point(5, 15), cv::FONT_HERSHEY_PLAIN, 1, txt_color_bg, 2.0, cv::LINE_AA);
+//        cv::putText(imText, "reference frame", cv::Point(5, 15), cv::FONT_HERSHEY_PLAIN, 1, txt_color_fg, 1.0, cv::LINE_AA);
+//        if(!mvPtGyroPredictUn.empty()){
+//            std::string str = "cur. frame: yellow circle - gyro predicted features (" + std::to_string(cnt_gyro_predict) + ")";
+//            cv::putText(imText, str, cv::Point(5 + w, 15), cv::FONT_HERSHEY_PLAIN, 1, txt_color_bg, 2.0, cv::LINE_AA);
+//            cv::putText(imText, str, cv::Point(5 + w, 15), cv::FONT_HERSHEY_PLAIN, 1, txt_color_fg, 1.0, cv::LINE_AA);
 
-            str = "             green dot - PatchMatch features (" + std::to_string(cnt_total_tracks) + ")";
-            cv::putText(imText, str, cv::Point(5 + w, 35), cv::FONT_HERSHEY_PLAIN, 1, txt_color_bg, 2.0, cv::LINE_AA);
-            cv::putText(imText, str, cv::Point(5 + w, 35), cv::FONT_HERSHEY_PLAIN, 1, txt_color_fg, 1.0, cv::LINE_AA);
+//            str = "             green dot - PatchMatch features (" + std::to_string(cnt_total_tracks) + ")";
+//            cv::putText(imText, str, cv::Point(5 + w, 35), cv::FONT_HERSHEY_PLAIN, 1, txt_color_bg, 2.0, cv::LINE_AA);
+//            cv::putText(imText, str, cv::Point(5 + w, 35), cv::FONT_HERSHEY_PLAIN, 1, txt_color_fg, 1.0, cv::LINE_AA);
 
-            str = "             red circle - features to be filter out by geo. valid. (" + std::to_string(cnt_bad_tracks) + ")";
-            cv::putText(imText, str, cv::Point(5 + w, 55), cv::FONT_HERSHEY_PLAIN, 1, txt_color_bg, 2.0, cv::LINE_AA);
-            cv::putText(imText, str, cv::Point(5 + w, 55), cv::FONT_HERSHEY_PLAIN, 1, txt_color_fg, 1.0, cv::LINE_AA);
-        }
-        else {
-            // for OPENCV_OPTICAL_FLOW_PYR_LK
-            std::string str = "cur. frame: green dot - openCV optical flow predicted features (" + std::to_string(cnt_total_tracks) + ")";
-            cv::putText(imText, str, cv::Point(5 + w, 15), cv::FONT_HERSHEY_PLAIN, 1, txt_color_bg, 2.0, cv::LINE_AA);
-            cv::putText(imText, str, cv::Point(5 + w, 15), cv::FONT_HERSHEY_PLAIN, 1, txt_color_fg, 1.0, cv::LINE_AA);
+//            str = "             red circle - features to be filter out by geo. valid. (" + std::to_string(cnt_bad_tracks) + ")";
+//            cv::putText(imText, str, cv::Point(5 + w, 55), cv::FONT_HERSHEY_PLAIN, 1, txt_color_bg, 2.0, cv::LINE_AA);
+//            cv::putText(imText, str, cv::Point(5 + w, 55), cv::FONT_HERSHEY_PLAIN, 1, txt_color_fg, 1.0, cv::LINE_AA);
+//        }
+//        else {
+//            // for OPENCV_OPTICAL_FLOW_PYR_LK
+//            std::string str = "cur. frame: green dot - openCV optical flow predicted features (" + std::to_string(cnt_total_tracks) + ")";
+//            cv::putText(imText, str, cv::Point(5 + w, 15), cv::FONT_HERSHEY_PLAIN, 1, txt_color_bg, 2.0, cv::LINE_AA);
+//            cv::putText(imText, str, cv::Point(5 + w, 15), cv::FONT_HERSHEY_PLAIN, 1, txt_color_fg, 1.0, cv::LINE_AA);
 
-            str = "             red circle - features to be filter out by geo. valid. (" + std::to_string(cnt_bad_tracks) + ")";
-            cv::putText(imText, str, cv::Point(5 + w, 35), cv::FONT_HERSHEY_PLAIN, 1, txt_color_bg, 2.0, cv::LINE_AA);
-            cv::putText(imText, str, cv::Point(5 + w, 35), cv::FONT_HERSHEY_PLAIN, 1, txt_color_fg, 1.0, cv::LINE_AA);
-        }
+//            str = "             red circle - features to be filter out by geo. valid. (" + std::to_string(cnt_bad_tracks) + ")";
+//            cv::putText(imText, str, cv::Point(5 + w, 35), cv::FONT_HERSHEY_PLAIN, 1, txt_color_bg, 2.0, cv::LINE_AA);
+//            cv::putText(imText, str, cv::Point(5 + w, 35), cv::FONT_HERSHEY_PLAIN, 1, txt_color_fg, 1.0, cv::LINE_AA);
+//        }
 
-        std::string str = "cur. frame: green dot - successful tracked features (" + std::to_string(cnt_tracked) + ")";
-        cv::putText(imText, str, cv::Point(5 + 2 * w, 15), cv::FONT_HERSHEY_PLAIN, 1, txt_color_bg, 2.0, cv::LINE_AA);
-        cv::putText(imText, str, cv::Point(5 + 2 * w, 15), cv::FONT_HERSHEY_PLAIN, 1, txt_color_fg, 1.0, cv::LINE_AA);
+//        std::string str = "cur. frame: green dot - successful tracked features (" + std::to_string(cnt_tracked) + ")";
+//        cv::putText(imText, str, cv::Point(5 + 2 * w, 15), cv::FONT_HERSHEY_PLAIN, 1, txt_color_bg, 2.0, cv::LINE_AA);
+//        cv::putText(imText, str, cv::Point(5 + 2 * w, 15), cv::FONT_HERSHEY_PLAIN, 1, txt_color_fg, 1.0, cv::LINE_AA);
 
-        str = "             blue dot - new feature detection (" + std::to_string(cnt_new_detected) + ")";
-        cv::putText(imText, str, cv::Point(5 + 2 * w, 35), cv::FONT_HERSHEY_PLAIN, 1, txt_color_bg, 2.0, cv::LINE_AA);
-        cv::putText(imText, str, cv::Point(5 + 2 * w, 35), cv::FONT_HERSHEY_PLAIN, 1, txt_color_fg, 1.0, cv::LINE_AA);
+//        str = "             blue dot - new feature detection (" + std::to_string(cnt_new_detected) + ")";
+//        cv::putText(imText, str, cv::Point(5 + 2 * w, 35), cv::FONT_HERSHEY_PLAIN, 1, txt_color_bg, 2.0, cv::LINE_AA);
+//        cv::putText(imText, str, cv::Point(5 + 2 * w, 35), cv::FONT_HERSHEY_PLAIN, 1, txt_color_fg, 1.0, cv::LINE_AA);
 
-        cv::imshow(winname, imText);
-        cv::waitKey(1);
+//        cv::imshow(winname, imText);
+//        cv::waitKey(1);
 
-    }
-}
-// to be deleted
-void Frame::Display(std::string winname, bool compare_with_SuperGlue)
-{
-    int margin = 10;
-    int h = mpCameraParams->height, w = mpCameraParams->width;
-    cv::Mat im_out = cv::Mat(h, 2 * w + margin, CV_8UC1, cv::Scalar(255));
-    mpLastFrame->mGray.copyTo(im_out.rowRange(0, h).colRange(0, w));
-    mGray.copyTo(im_out.rowRange(0, h).colRange(w+margin, 2*w+margin));
-
-    if(im_out.channels() < 3) //this should be always true
-        cv::cvtColor(im_out, im_out, CV_GRAY2BGR);
-
-    int cnt_tracked = 0, cnt_new_detected = 0;
-    std::set<int> sPtIndexInLastFrame;
-    for(size_t i = 0, iend = mvKeysUn.size(); i < iend; i++){
-        if(mvKeysUn[i].size > 1){ // this keypoint is tracked by gyro prediction and patch matched.
-            cnt_tracked ++;
-
-            sPtIndexInLastFrame.insert(mvPtIndexInLastFrame[i]); // record good tracks after geometric validation
-        }
-        else {  // new predict feature
-            cnt_new_detected ++;
-        }
-    }
-
-    // tracked results
-    int circle_radius = 1;
-    int circle_thickness = -1;
-    int line_thickness = 1;
-
-    int cnt_gyro_predict = 0;
-    int cnt_total_tracks = 0, cnt_bad_tracks = 0;
-    // draw the gyro predicd and patch-matched features that do not filter out by geometry validation
-    for(size_t i = 0, iend = curFrameWithoutGeometryValid->mvStatus.size(); i < iend; i++){
-        cv::Point2f pt_cur = curFrameWithoutGeometryValid->mvPtPredictUn[i] + cv::Point2f(w+margin,0);
-        cv::Point2f pt_ref = mpLastFrame->mvKeysUn[i].pt;
-
-        if(!curFrameWithoutGeometryValid->mvStatus[i]){ // Loss-tracked, blue circle
-            cv::circle(im_out, pt_ref, 2, cv::Scalar(255, 0, 0), -1);
-            continue;
-        }
-
-        cnt_total_tracks ++;
-
-        if(sPtIndexInLastFrame.find(i) == sPtIndexInLastFrame.end()){   // Mistracked, red circle, red line
-            cv::circle(im_out, pt_cur, 2, cv::Scalar(0, 0, 255), -1);
-            cv::circle(im_out, pt_ref, 2, cv::Scalar(0, 0, 255), -1);
-
-            cv::line(im_out, pt_ref, pt_cur, cv::Scalar(0,0,255), line_thickness, cv::LINE_AA);
-            cnt_bad_tracks ++;
-        }else {
-            cv::circle(im_out, pt_cur, 2, cv::Scalar(0, 255, 0), -1);   // Good track, green circle, white line
-
-            cv::circle(im_out, pt_ref, 2, cv::Scalar(0, 255, 0), -1);
-            cv::line(im_out, pt_ref, pt_cur, cv::Scalar(0,255,0), line_thickness, cv::LINE_AA);
-        }
-    }
-
-
-    std::stringstream s;
-    s << std::fixed << std::setprecision(4)
-      << "Id: " << mnId
-      << ", T: " << std::to_string(mTimeStamp)
-      << ", RefF kp Num: " << mvStatus.size()
-      << ", CurF kp Num: " << cnt_tracked + cnt_new_detected
-      << " (tracked: " << cnt_tracked << ", new det.: " << cnt_new_detected
-      << ")" << ", Track Rate: " << 100.0 * cnt_tracked / mvStatus.size() << "%"
-         //<< ", Avg Err. Gyro Pred. Patch Match: " << error_gyro_predict_patch_match / cnt_gyro_predict
-         ;
-
-    cv::Size textSize = cv::getTextSize(s.str(),cv::FONT_HERSHEY_PLAIN,1,1,0);
-    cv::Mat imText = cv::Mat(im_out.rows + textSize.height + 10, im_out.cols, im_out.type());
-    im_out.copyTo(imText.rowRange(0, im_out.rows).colRange(0, im_out.cols));
-    imText.rowRange(im_out.rows, imText.rows) = cv::Mat::zeros(textSize.height + 10, im_out.cols, im_out.type());
-
-    cv::Scalar txt_color_fg(255, 255, 255);
-    cv::Scalar txt_color_bg(0, 0, 0);
-
-    cv::putText(imText, s.str(), cv::Point(5, imText.rows-5), cv::FONT_HERSHEY_PLAIN, 1, txt_color_fg, 1.0, cv::LINE_AA);
-
-    std::vector<std::string> vTxt;
-    if(!mvPtGyroPredictUn.empty()){
-        vTxt.push_back("Gyro-Aided KLT Feature Tracking");
-    }
-    else {  // for OPENCV_OPTICAL_FLOW_PYR_LK
-        vTxt.push_back("Image-only KLT Feature Tracking");
-    }
-
-    vTxt.push_back("Keypoints: " + std::to_string(mpLastFrame->mvKeys.size()));
-    vTxt.push_back("Tracks: " + std::to_string(cnt_total_tracks));
-    vTxt.push_back("Outliers: " + std::to_string(cnt_bad_tracks));
-
-    double sc = std::min(mGray.rows/640.0, 2.0);    // scale factor for consistent visualization across scales
-    int Ht = int(sc * 30);
-    for (int i = 0; i < vTxt.size(); i++) {
-        cv::putText(imText, vTxt[i], cv::Point(int(8*sc), Ht*(i+1)), cv::FONT_HERSHEY_DUPLEX, 1.0*sc, txt_color_bg, 2.0, cv::LINE_AA);
-        cv::putText(imText, vTxt[i], cv::Point(int(8*sc), Ht*(i+1)), cv::FONT_HERSHEY_DUPLEX, 1.0*sc, txt_color_fg, 1.0, cv::LINE_AA);
-
-    }
-
-    cv::imshow(winname, imText);
-    cv::waitKey(1);
-}
+//    }
+//}
 
 
 /**

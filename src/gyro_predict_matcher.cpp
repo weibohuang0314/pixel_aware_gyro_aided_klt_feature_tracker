@@ -4,11 +4,11 @@
 #include <thread>
 #include <time.h>
 
-const float GyroPredictMatcher::TH_NCC_HIGH = 0.6f; //0.85f;
-const float GyroPredictMatcher::TH_NCC_LOW = 0.3f; // 0.65f;
-const float GyroPredictMatcher::TH_RATIO = 0.75f;
+const float GyroAidedTracker::TH_NCC_HIGH = 0.6f; //0.85f;
+const float GyroAidedTracker::TH_NCC_LOW = 0.3f; // 0.65f;
+const float GyroAidedTracker::TH_RATIO = 0.75f;
 
-GyroPredictMatcher::GyroPredictMatcher(double t, double t_ref, const cv::Mat &imgGrayRef_, const cv::Mat &imgGrayCur_,
+GyroAidedTracker::GyroAidedTracker(double t, double t_ref, const cv::Mat &imgGrayRef_, const cv::Mat &imgGrayCur_,
                                        const std::vector<cv::KeyPoint> &vKeysRef_, const std::vector<cv::KeyPoint> &vKeysCur_,
                                        const std::vector<cv::KeyPoint> &vKeysUnRef_, const std::vector<cv::KeyPoint> &vKeysUnCur_,
                                        const std::vector<IMU::Point> &vImuFromLastFrame, const cv::Point3f &bias_,
@@ -25,7 +25,7 @@ GyroPredictMatcher::GyroPredictMatcher(double t, double t_ref, const cv::Mat &im
     Initialize();
 }
 
-GyroPredictMatcher::GyroPredictMatcher(const Frame& pFrameRef, const Frame& pFrameCur,
+GyroAidedTracker::GyroAidedTracker(const Frame& pFrameRef, const Frame& pFrameCur,
                                        const IMU::Calib& imuCalib,
                                        //                                       IMU::Calib* pIMUCalib,
                                        const cv::Point3f &biasg_,
@@ -46,7 +46,7 @@ GyroPredictMatcher::GyroPredictMatcher(const Frame& pFrameRef, const Frame& pFra
     Initialize();
 }
 
-void GyroPredictMatcher::Initialize()
+void GyroAidedTracker::Initialize()
 {
     // create folder
     if (mSaveFolderPath.size() > 0){    // if the folder path is set, then we save processing results
@@ -98,7 +98,7 @@ void GyroPredictMatcher::Initialize()
     mvAffineDeformationMatrix.resize(mN);
 }
 
-void GyroPredictMatcher::SetBackToFrame(Frame &pFrame)
+void GyroAidedTracker::SetBackToFrame(Frame &pFrame)
 {
     pFrame.mvPtGyroPredictUn = std::vector<cv::Point2f>(mvPtGyroPredictUn.begin(), mvPtGyroPredictUn.end());
     pFrame.mvPtPredict = std::vector<cv::Point2f>(mvPtPredict.begin(), mvPtPredict.end());
@@ -116,10 +116,10 @@ void GyroPredictMatcher::SetBackToFrame(Frame &pFrame)
 
 /**
  * Search matches between keypoints in current frame and reference frame, using optical flow tracking (KLT)
- * @brief GyroPredictMatcher::SearchByOpencvKLT
+ * @brief GyroAidedTracker::SearchByOpencvKLT
  * @return The number of matched features.
  */
-int GyroPredictMatcher::SearchByOpencvKLT()
+int GyroAidedTracker::SearchByOpencvKLT()
 {
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 
@@ -248,11 +248,11 @@ int GyroPredictMatcher::SearchByOpencvKLT()
 
 
 /**
- * @brief GyroPredictMatcher::GyroPredictFeatures
+ * @brief GyroAidedTracker::GyroPredictFeatures
  * @return The number of predicted features.
  * Predict features using gyroscope integrated rotation (Rcl), do not use depth and translation
  */
-int GyroPredictMatcher::GyroPredictFeatures()
+int GyroAidedTracker::GyroPredictFeatures()
 {
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 
@@ -334,13 +334,13 @@ int GyroPredictMatcher::GyroPredictFeatures()
 }
 
 /**
- * @brief GyroPredictMatcher::GyroPredictOnePixel
+ * @brief GyroAidedTracker::GyroPredictOnePixel
  * @param pt_ref                Undistorted feature point on reference frame.
  * @param pt_predict            Predicted point on current frame.
  * @param pt_predict_distort    Distorted the predicted point. Used to image show.
  * @param flow                  Optical Flow. flow = pt_redict - pt_ref
  */
-void GyroPredictMatcher::GyroPredictOnePixel(cv::Point2f &pt_ref,
+void GyroAidedTracker::GyroPredictOnePixel(cv::Point2f &pt_ref,
                                              cv::Point2f &pt_predict,
                                              cv::Point2f &pt_predict_distort,
                                              cv::Point2f &flow)
@@ -435,7 +435,7 @@ void GyroPredictMatcher::GyroPredictOnePixel(cv::Point2f &pt_ref,
 
 }
 
-int GyroPredictMatcher::GyroPredictFeaturesAndOpticalFlowRefined()
+int GyroAidedTracker::GyroPredictFeaturesAndOpticalFlowRefined()
 {
     //Timer timer;
     /// Step 1: Predict features using gyroscope integrated rotation
@@ -545,10 +545,10 @@ int GyroPredictMatcher::GyroPredictFeaturesAndOpticalFlowRefined()
 
 /**
  * Search matches between keyoints in current frame and reference frame, using gyroscope integration
- * @brief GyroPredictMatcher::SearchByGyroPredict
+ * @brief GyroAidedTracker::SearchByGyroPredict
  * @return The number of matched fatures.
  */
-int GyroPredictMatcher::SearchByGyroPredict()
+int GyroAidedTracker::SearchByGyroPredict()
 {
     IntegrateGyroMeasurements();
     //LOG(INFO) << "mRcl: " << mRcl;
@@ -602,7 +602,7 @@ int GyroPredictMatcher::SearchByGyroPredict()
     /// Step 2: For each predicted point in current frame, see which detected feature it belongs to.
     // Step 2.1: Find the neighbors for of predicted point. The neighbors are the detected features.
     //           radius: mRadiusForFindNearNeighbor (default: 4.0f)
-    cv::parallel_for_(cv::Range(0, mN), std::bind(&GyroPredictMatcher::FindAndSortNearNeighbor, this, placeholders::_1, 1));
+    cv::parallel_for_(cv::Range(0, mN), std::bind(&GyroAidedTracker::FindAndSortNearNeighbor, this, placeholders::_1, 1));
     mTimeFindNearest = timer.runTime_s();   timer.freshTimer();
 
     // Step 2.2: See which detected features the predicted point belongs to.
@@ -612,7 +612,7 @@ int GyroPredictMatcher::SearchByGyroPredict()
 
     // If no enough matches, we wider the search region to find near neighbors and then match features again.
     if (mvMatches.size() < 100) {
-        cv::parallel_for_(cv::Range(0, mN), std::bind(&GyroPredictMatcher::FindAndSortNearNeighbor, this, placeholders::_1, 2));
+        cv::parallel_for_(cv::Range(0, mN), std::bind(&GyroAidedTracker::FindAndSortNearNeighbor, this, placeholders::_1, 2));
         mvMatches.clear();
         MatchFeatures(mvMatches, mvvNearNeighbors);
         // LOG(WARNING) << "after enlarge radius, match: " << mvMatches.size();
@@ -632,7 +632,7 @@ int GyroPredictMatcher::SearchByGyroPredict()
     return mvMatches.size();
 }
 
-int GyroPredictMatcher::TrackFeatures()
+int GyroAidedTracker::TrackFeatures()
 {
     Timer timer, timer_total;
     IntegrateGyroMeasurements();
@@ -742,7 +742,7 @@ int GyroPredictMatcher::TrackFeatures()
 }
 
 // Step 2: use multi-view geometric to filter out outliers
-int GyroPredictMatcher::GeometryValidation()
+int GyroAidedTracker::GeometryValidation()
 {
     Timer timer;
     std::vector<cv::Point2f> vPts1, vPts2;
@@ -766,8 +766,8 @@ int GyroPredictMatcher::GeometryValidation()
         std::vector<bool> vbMatchesInliers_H;
         cv::Mat F21, H21;
 
-        std::thread threadH(&GyroPredictMatcher::CheckHomography, this, std::ref(H21), std::ref(score_H), ref(vbMatchesInliers_H), ref(vPts1), ref(vPts2), ref(sigma));
-        std::thread threadF(&GyroPredictMatcher::CheckFundamental, this, std::ref(F21),std::ref(score_F), ref(vbMatchesInliers_F), ref(vPts1), ref(vPts2), ref(sigma));
+        std::thread threadH(&GyroAidedTracker::CheckHomography, this, std::ref(H21), std::ref(score_H), ref(vbMatchesInliers_H), ref(vPts1), ref(vPts2), ref(sigma));
+        std::thread threadF(&GyroAidedTracker::CheckFundamental, this, std::ref(F21),std::ref(score_F), ref(vbMatchesInliers_F), ref(vPts1), ref(vPts2), ref(sigma));
 
         // Wait until both threads have finished
         threadH.join();
@@ -828,10 +828,10 @@ int GyroPredictMatcher::GeometryValidation()
  * Find the neighbors for each predicted point. The neighbors are the detected features.
  * Current implementation: Find all the neighbor feature points to the predicted point.
  *                         Using NCC score to sort the results.
- * @brief GyroPredictMatcher::FindAndSortNearNeighbor
+ * @brief GyroAidedTracker::FindAndSortNearNeighbor
  * @param mvvNearNeighbors [out]: order: if mbNCC == true, big to small; if mbNCC == false, small to big
  */
-void GyroPredictMatcher::FindAndSortNearNeighbor(const cv::Range& range, int level)
+void GyroAidedTracker::FindAndSortNearNeighbor(const cv::Range& range, int level)
 {
     for (int i = range.start; i < range.end; i++) {
         if (!mvStatus[i])
@@ -898,12 +898,12 @@ void GyroPredictMatcher::FindAndSortNearNeighbor(const cv::Range& range, int lev
 
 /**
  * See which detected features the predicted point belongs to.
- * @brief GyroPredictMatcher::MatchFeatures
+ * @brief GyroAidedTracker::MatchFeatures
  * @param vMatches
  * @param sFoundInCurPts
  * @param vvNearNeighbors
  */
-void GyroPredictMatcher::MatchFeatures(
+void GyroAidedTracker::MatchFeatures(
         std::vector<sMatch> &vMatches,
         const vector<vector<sMatch>> &vvNearNeighbors)
 {
@@ -993,11 +993,8 @@ void GyroPredictMatcher::MatchFeatures(
 
 
 }
-// TODO: tune the parameters of MatchFeatures() function
 
-
-
-void GyroPredictMatcher::SetRcl(const cv::Mat Rcl_)
+void GyroAidedTracker::SetRcl(const cv::Mat Rcl_)
 {
     Rcl_.copyTo(mRcl);
     mr11 = mRcl.at<float>(0,0); mr12 = mRcl.at<float>(0,1); mr13 = mRcl.at<float>(0,2);
@@ -1007,233 +1004,233 @@ void GyroPredictMatcher::SetRcl(const cv::Mat Rcl_)
     mKRKinv = mK * mRcl * mK.inv();
 }
 
-void GyroPredictMatcher::Display(bool isKeyFrame)
-{
-    if (mType == OPENCV_OPTICAL_FLOW_PYR_LK) {
-        // Display the match results on raw image using opencv optical flow pyramid LK method
-        if (mImgGrayRef.empty() || mImgGrayCur.empty()) {
-            LOG(ERROR) << "mImgGrayRef or mImgGrayCur is empty when display the results, shouldn't !!! return;";
-            return ;
-        }
+//void GyroAidedTracker::Display(bool isKeyFrame)
+//{
+//    if (mType == OPENCV_OPTICAL_FLOW_PYR_LK) {
+//        // Display the match results on raw image using opencv optical flow pyramid LK method
+//        if (mImgGrayRef.empty() || mImgGrayCur.empty()) {
+//            LOG(ERROR) << "mImgGrayRef or mImgGrayCur is empty when display the results, shouldn't !!! return;";
+//            return ;
+//        }
 
-        cv::Mat im_out = cv::Mat(mHeight, 2 * mWidth, CV_8UC1, cv::Scalar(0));
-        mImgGrayRef.copyTo(im_out.rowRange(0, mHeight).colRange(0,mWidth));
-        mImgGrayCur.copyTo(im_out.rowRange(0, mHeight).colRange(mWidth, 2 * mWidth));
+//        cv::Mat im_out = cv::Mat(mHeight, 2 * mWidth, CV_8UC1, cv::Scalar(0));
+//        mImgGrayRef.copyTo(im_out.rowRange(0, mHeight).colRange(0,mWidth));
+//        mImgGrayCur.copyTo(im_out.rowRange(0, mHeight).colRange(mWidth, 2 * mWidth));
 
-        if(im_out.channels() < 3) //this should be always true
-            cvtColor(im_out, im_out, CV_GRAY2BGR);
+//        if(im_out.channels() < 3) //this should be always true
+//            cvtColor(im_out, im_out, CV_GRAY2BGR);
 
-        double sumDisp = 0, maxDisp = mvDisparities[0];
-        for (auto disp: mvDisparities) {
-            sumDisp += disp;
-            maxDisp = maxDisp < disp? disp: maxDisp;
-        }
+//        double sumDisp = 0, maxDisp = mvDisparities[0];
+//        for (auto disp: mvDisparities) {
+//            sumDisp += disp;
+//            maxDisp = maxDisp < disp? disp: maxDisp;
+//        }
 
-        std::set<int> recored;
-        for(size_t i = 0; i < mvMatches.size(); i++) {
-            recored.insert(mvMatches[i].queryIdx);
-            cv::Point2f pt_ref = mvKeysRef[mvMatches[i].queryIdx].pt;   // features on raw image
-            cv::Point2f pt_cur = mvKeysCur[mvMatches[i].trainIdx].pt;
+//        std::set<int> recored;
+//        for(size_t i = 0; i < mvMatches.size(); i++) {
+//            recored.insert(mvMatches[i].queryIdx);
+//            cv::Point2f pt_ref = mvKeysRef[mvMatches[i].queryIdx].pt;   // features on raw image
+//            cv::Point2f pt_cur = mvKeysCur[mvMatches[i].trainIdx].pt;
 
-            cv::Point2f pt_ref_1 = pt_ref + cv::Point2f(-mHalfPatchSize, -mHalfPatchSize);
-            cv::Point2f pt_ref_2 = pt_ref + cv::Point2f(mHalfPatchSize, mHalfPatchSize);
-            cv::Point2f pt_cur_1 = pt_cur + cv::Point2f(-mHalfPatchSize, -mHalfPatchSize) + cv::Point2f(mWidth, 0);
-            cv::Point2f pt_cur_2 = pt_cur + cv::Point2f(mHalfPatchSize, mHalfPatchSize) + cv::Point2f(mWidth, 0);
+//            cv::Point2f pt_ref_1 = pt_ref + cv::Point2f(-mHalfPatchSize, -mHalfPatchSize);
+//            cv::Point2f pt_ref_2 = pt_ref + cv::Point2f(mHalfPatchSize, mHalfPatchSize);
+//            cv::Point2f pt_cur_1 = pt_cur + cv::Point2f(-mHalfPatchSize, -mHalfPatchSize) + cv::Point2f(mWidth, 0);
+//            cv::Point2f pt_cur_2 = pt_cur + cv::Point2f(mHalfPatchSize, mHalfPatchSize) + cv::Point2f(mWidth, 0);
 
-            cv::rectangle(im_out, pt_ref_1, pt_ref_2, cv::Scalar(0, 255, 0));
-            cv::circle(im_out, pt_ref, 2, cv::Scalar(0, 255, 0), -1);
-            cv::rectangle(im_out, pt_cur_1, pt_cur_2, cv::Scalar(0, 255, 0));
-            cv::circle(im_out, pt_cur + cv::Point2f(mWidth, 0), 2, cv::Scalar(0, 255, 0), -1);
+//            cv::rectangle(im_out, pt_ref_1, pt_ref_2, cv::Scalar(0, 255, 0));
+//            cv::circle(im_out, pt_ref, 2, cv::Scalar(0, 255, 0), -1);
+//            cv::rectangle(im_out, pt_cur_1, pt_cur_2, cv::Scalar(0, 255, 0));
+//            cv::circle(im_out, pt_cur + cv::Point2f(mWidth, 0), 2, cv::Scalar(0, 255, 0), -1);
 
-            cv::line(im_out, pt_ref + cv::Point2f(mWidth, 0), pt_cur + cv::Point2f(mWidth, 0), cv::Scalar(255,255,255));
+//            cv::line(im_out, pt_ref + cv::Point2f(mWidth, 0), pt_cur + cv::Point2f(mWidth, 0), cv::Scalar(255,255,255));
 
-        }
+//        }
 
-        int cnt_klt_track = recored.size();
-        for (size_t i = 0; i < mvKeysRef.size(); i++) {
-            if (recored.find(i) == recored.end()) {
-                // track fail features in reference frame
-                cv::Point2f pt_ref = mvKeysRef[i].pt;
-                cv::circle(im_out, pt_ref, 1, cv::Scalar(0, 0, 255), -1);   // red
+//        int cnt_klt_track = recored.size();
+//        for (size_t i = 0; i < mvKeysRef.size(); i++) {
+//            if (recored.find(i) == recored.end()) {
+//                // track fail features in reference frame
+//                cv::Point2f pt_ref = mvKeysRef[i].pt;
+//                cv::circle(im_out, pt_ref, 1, cv::Scalar(0, 0, 255), -1);   // red
 
-                // klt predicted but matched failed points in current frame
-                if (mvStatus[i]) {
-                    cnt_klt_track ++;
-                    cv::Point2f pt_cur = mvPtPredict[i];
-                    cv::circle(im_out, pt_cur + cv::Point2f(mWidth, 0), 1, cv::Scalar(0, 0, 255), -1);   // blue
-                }
+//                // klt predicted but matched failed points in current frame
+//                if (mvStatus[i]) {
+//                    cnt_klt_track ++;
+//                    cv::Point2f pt_cur = mvPtPredict[i];
+//                    cv::circle(im_out, pt_cur + cv::Point2f(mWidth, 0), 1, cv::Scalar(0, 0, 255), -1);   // blue
+//                }
 
-            }
-        }
+//            }
+//        }
 
-        stringstream s;
-        s << fixed << setprecision(4) << "T: " << std::to_string(mTimeStamp)
-          << ", KFs: " << mvKeysRef.size()
-          << ", maxDisp: " << maxDisp << ", avgDisp: " << sumDisp/mvDisparities.size()
-          << ", matches: " << mvMatches.size() << ", recored.size(): " << recored.size()
-          << ", klt_track: " << cnt_klt_track
-          << ", KFs2: " << mvKeysCur.size()
-          << ", cost: " << mTimeCost;
+//        stringstream s;
+//        s << fixed << setprecision(4) << "T: " << std::to_string(mTimeStamp)
+//          << ", KFs: " << mvKeysRef.size()
+//          << ", maxDisp: " << maxDisp << ", avgDisp: " << sumDisp/mvDisparities.size()
+//          << ", matches: " << mvMatches.size() << ", recored.size(): " << recored.size()
+//          << ", klt_track: " << cnt_klt_track
+//          << ", KFs2: " << mvKeysCur.size()
+//          << ", cost: " << mTimeCost;
 
-        cv::Size textSize = cv::getTextSize(s.str(),cv::FONT_HERSHEY_PLAIN,1,1,0);
-        cv::Mat imText = cv::Mat(im_out.rows + textSize.height + 10, im_out.cols, im_out.type());
-        im_out.copyTo(imText.rowRange(0, im_out.rows).colRange(0, im_out.cols));
-        imText.rowRange(im_out.rows, imText.rows) = cv::Mat::zeros(textSize.height + 10, im_out.cols, im_out.type());
-        cv::putText(imText, s.str(), cv::Point(5, imText.rows-5), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(255,255,255),1.0);
+//        cv::Size textSize = cv::getTextSize(s.str(),cv::FONT_HERSHEY_PLAIN,1,1,0);
+//        cv::Mat imText = cv::Mat(im_out.rows + textSize.height + 10, im_out.cols, im_out.type());
+//        im_out.copyTo(imText.rowRange(0, im_out.rows).colRange(0, im_out.cols));
+//        imText.rowRange(im_out.rows, imText.rows) = cv::Mat::zeros(textSize.height + 10, im_out.cols, im_out.type());
+//        cv::putText(imText, s.str(), cv::Point(5, imText.rows-5), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(255,255,255),1.0);
 
-        cv::imshow("SearchByOpencvKLT", imText);
-        cv::waitKey(1);
+//        cv::imshow("SearchByOpencvKLT", imText);
+//        cv::waitKey(1);
 
-    }
-    else if (mType == GYRO_PREDICT
-             || mType == GYRO_PREDICT_WITH_OPTICAL_FLOW_REFINED
-             || mType == GYRO_PREDICT_WITH_OPTICAL_FLOW_REFINED_CONSIDER_ILLUMINATION
-             || mType == GYRO_PREDICT_WITH_OPTICAL_FLOW_REFINED_CONSIDER_ILLUMINATION_DEFORMATION
-             || mType == GYRO_PREDICT_WITH_OPTICAL_FLOW_REFINED_CONSIDER_ILLUMINATION_DEFORMATION_REGULAR
-             || mType == IMAGE_ONLY_OPTICAL_FLOW_CONSIDER_ILLUMINATION) {
-        // Display the match results on raw image using gyroscope-aided predicted
-        if (mImgGrayRef.empty() || mImgGrayCur.empty()) {
-            LOG(ERROR) << "mImgGrayRef or mImgGrayCur is empty when display the results, shouldn't !!! return;";
-            return ;
-        }
+//    }
+//    else if (mType == GYRO_PREDICT
+//             || mType == GYRO_PREDICT_WITH_OPTICAL_FLOW_REFINED
+//             || mType == GYRO_PREDICT_WITH_OPTICAL_FLOW_REFINED_CONSIDER_ILLUMINATION
+//             || mType == GYRO_PREDICT_WITH_OPTICAL_FLOW_REFINED_CONSIDER_ILLUMINATION_DEFORMATION
+//             || mType == GYRO_PREDICT_WITH_OPTICAL_FLOW_REFINED_CONSIDER_ILLUMINATION_DEFORMATION_REGULAR
+//             || mType == IMAGE_ONLY_OPTICAL_FLOW_CONSIDER_ILLUMINATION) {
+//        // Display the match results on raw image using gyroscope-aided predicted
+//        if (mImgGrayRef.empty() || mImgGrayCur.empty()) {
+//            LOG(ERROR) << "mImgGrayRef or mImgGrayCur is empty when display the results, shouldn't !!! return;";
+//            return ;
+//        }
 
-        cv::Mat im_out = cv::Mat(mHeight, 2 * mWidth, CV_8UC1, cv::Scalar(0));
-        mImgGrayRef.copyTo(im_out.rowRange(0, mHeight).colRange(0,mWidth));
-        mImgGrayCur.copyTo(im_out.rowRange(0, mHeight).colRange(mWidth, 2 * mWidth));
+//        cv::Mat im_out = cv::Mat(mHeight, 2 * mWidth, CV_8UC1, cv::Scalar(0));
+//        mImgGrayRef.copyTo(im_out.rowRange(0, mHeight).colRange(0,mWidth));
+//        mImgGrayCur.copyTo(im_out.rowRange(0, mHeight).colRange(mWidth, 2 * mWidth));
 
-        if(im_out.channels() < 3) //this should be always true
-            cvtColor(im_out, im_out, CV_GRAY2BGR);
+//        if(im_out.channels() < 3) //this should be always true
+//            cvtColor(im_out, im_out, CV_GRAY2BGR);
 
-        // const float r = 5;
+//        // const float r = 5;
 
-        std::set<int> recored_match;
-        for (size_t i = 0; i < mvMatches.size(); i++) {
-            recored_match.insert(mvMatches[i].queryIdx);
-        }
+//        std::set<int> recored_match;
+//        for (size_t i = 0; i < mvMatches.size(); i++) {
+//            recored_match.insert(mvMatches[i].queryIdx);
+//        }
 
-        // draw the detected features in current frame
-        for(size_t i = 0; i < mvKeysCur.size(); i++){
-            cv::Point2f pt_cur = mvKeysCur[i].pt + cv::Point2f(mWidth, 0);
-            cv::circle(im_out, pt_cur, 1, cv::Scalar(255, 255, 0), -1);
-        }
+//        // draw the detected features in current frame
+//        for(size_t i = 0; i < mvKeysCur.size(); i++){
+//            cv::Point2f pt_cur = mvKeysCur[i].pt + cv::Point2f(mWidth, 0);
+//            cv::circle(im_out, pt_cur, 1, cv::Scalar(255, 255, 0), -1);
+//        }
 
-        // draw the detected features in reference frame
-        for(size_t i = 0; i < mvKeysRef.size(); i++){
-            cv::Point2f pt_ref = mvKeysRef[i].pt;
-            cv::circle(im_out, pt_ref, 1, cv::Scalar(255,255,0), -1);
-        }
+//        // draw the detected features in reference frame
+//        for(size_t i = 0; i < mvKeysRef.size(); i++){
+//            cv::Point2f pt_ref = mvKeysRef[i].pt;
+//            cv::circle(im_out, pt_ref, 1, cv::Scalar(255,255,0), -1);
+//        }
 
-        // draw the pixels filter out by the nearest check
-        int count_predict = 0;
-        for (size_t i = 0; i < mvPtPredict.size(); i++) {
-            if (!mvStatus[i])
-                continue;
+//        // draw the pixels filter out by the nearest check
+//        int count_predict = 0;
+//        for (size_t i = 0; i < mvPtPredict.size(); i++) {
+//            if (!mvStatus[i])
+//                continue;
 
-            if (recored_match.find(i) == recored_match.end()) {
-                // track fail features in reference frame
-                cv::Point2f pt_ref = mvKeysRef[i].pt;
-                cv::circle(im_out, pt_ref, 1, cv::Scalar(0, 0, 255), -1);   // red.
+//            if (recored_match.find(i) == recored_match.end()) {
+//                // track fail features in reference frame
+//                cv::Point2f pt_ref = mvKeysRef[i].pt;
+//                cv::circle(im_out, pt_ref, 1, cv::Scalar(0, 0, 255), -1);   // red.
 
-                // predicted but matched failed points in current frame
-                cv::Point2f pt_predict = mvPtPredict[i] + cv::Point2f(mWidth, 0);
-                cv::circle(im_out, pt_predict, 1, cv::Scalar(0, 0, 255), -1);   // red.
-                cv::line(im_out, pt_ref + cv::Point2f(mWidth, 0), pt_predict, cv::Scalar(255,255,255), 1);
-            }
+//                // predicted but matched failed points in current frame
+//                cv::Point2f pt_predict = mvPtPredict[i] + cv::Point2f(mWidth, 0);
+//                cv::circle(im_out, pt_predict, 1, cv::Scalar(0, 0, 255), -1);   // red.
+//                cv::line(im_out, pt_ref + cv::Point2f(mWidth, 0), pt_predict, cv::Scalar(255,255,255), 1);
+//            }
 
-            count_predict ++;
-        }
+//            count_predict ++;
+//        }
 
-        // draw matched features
-        int i = 0;
-        for (; i < mvMatches.size(); i++) {
-            cv::Point2f pt_ref = mvKeysRef[mvMatches[i].queryIdx].pt; // vPtDetectedRef[vMatches[i].queryIdx];
-            cv::Point2f pt_cur = mvKeysCur[mvMatches[i].trainIdx].pt + cv::Point2f(mWidth, 0);
-            cv::Point2f pt_predict = mvPtPredict[mvMatches[i].queryIdx] + cv::Point2f(mWidth, 0);
+//        // draw matched features
+//        int i = 0;
+//        for (; i < mvMatches.size(); i++) {
+//            cv::Point2f pt_ref = mvKeysRef[mvMatches[i].queryIdx].pt; // vPtDetectedRef[vMatches[i].queryIdx];
+//            cv::Point2f pt_cur = mvKeysCur[mvMatches[i].trainIdx].pt + cv::Point2f(mWidth, 0);
+//            cv::Point2f pt_predict = mvPtPredict[mvMatches[i].queryIdx] + cv::Point2f(mWidth, 0);
 
-            cv::circle(im_out, pt_ref, 2, cv::Scalar(0,255,0), -1);     // green: feature in reference frame
-            cv::circle(im_out, pt_predict, 2, cv::Scalar(255,0,0), -1); // blue: predict feature in current frame
-            cv::circle(im_out, pt_cur, 2, cv::Scalar(0,255,0), -1);     // green: matched feature in current frame
+//            cv::circle(im_out, pt_ref, 2, cv::Scalar(0,255,0), -1);     // green: feature in reference frame
+//            cv::circle(im_out, pt_predict, 2, cv::Scalar(255,0,0), -1); // blue: predict feature in current frame
+//            cv::circle(im_out, pt_cur, 2, cv::Scalar(0,255,0), -1);     // green: matched feature in current frame
 
-            // Draw rectangles for reference keypoints
-            cv::rectangle(im_out, pt_ref + cv::Point2f(-mHalfPatchSize, -mHalfPatchSize),
-                          pt_ref + cv::Point2f(mHalfPatchSize, mHalfPatchSize), cv::Scalar(0, 255, 0));
+//            // Draw rectangles for reference keypoints
+//            cv::rectangle(im_out, pt_ref + cv::Point2f(-mHalfPatchSize, -mHalfPatchSize),
+//                          pt_ref + cv::Point2f(mHalfPatchSize, mHalfPatchSize), cv::Scalar(0, 255, 0));
 
-            // Draw flows
-            cv::line(im_out, pt_ref + cv::Point2f(mWidth,0), pt_predict, cv::Scalar(255,0,0), 2);  // white: reference feature --> predict pixel
-            cv::line(im_out, pt_predict, pt_cur, cv::Scalar(0,0,255), 1);   // red: predict pixel --> detected feature
-
-
-            // Draw the affine deformated rectangles for the matched keypoints.
-            cv::Point2f pt_tl = mvvFlowsPredictCorners[mvMatches[i].queryIdx][0] + pt_cur;
-            cv::Point2f pt_tr = mvvFlowsPredictCorners[mvMatches[i].queryIdx][1] + pt_cur;
-            cv::Point2f pt_bl = mvvFlowsPredictCorners[mvMatches[i].queryIdx][2] + pt_cur;
-            cv::Point2f pt_br = mvvFlowsPredictCorners[mvMatches[i].queryIdx][3] + pt_cur;
-
-            cv::Scalar scalar = cv::Scalar(0,255,0);
-            cv::line(im_out, pt_tl, pt_tr, scalar, 1);
-            cv::line(im_out, pt_tr, pt_br, scalar, 1);
-            cv::line(im_out, pt_bl, pt_br, scalar, 1);
-            cv::line(im_out, pt_tl, pt_bl, scalar, 1);
-        }
-
-        stringstream s;
-        s << fixed << setprecision(4) << "T: " << std::to_string(mTimeStamp)
-          << ", KFs: " << mvKeysRef.size() << ", Pred. " << count_predict
-          << " (" << 100.0 * count_predict/mvKeysRef.size() << " %)"
-          << ", matched: " << mvMatches.size() << " (" << 100.0 * mvMatches.size()/count_predict << " %)"
-          << ", cost: " << mTimeCost << " [Pred.: " << mTimeFeaturePredict
-          << " (G.: " << mTimeCostGyroPredict <<  ", OF: " << mTimeCostOptFlow << ")"
-          << ", FN: " << mTimeFindNearest << ", FO: " << mTimeFilterOut << "]";
-
-        //        // debug
-        //        if(mvMatches.size() > count_predict)
-        //            LOG(WARNING) << YELLOW << s.str() << RESET;
+//            // Draw flows
+//            cv::line(im_out, pt_ref + cv::Point2f(mWidth,0), pt_predict, cv::Scalar(255,0,0), 2);  // white: reference feature --> predict pixel
+//            cv::line(im_out, pt_predict, pt_cur, cv::Scalar(0,0,255), 1);   // red: predict pixel --> detected feature
 
 
-        cv::Size textSize = cv::getTextSize(s.str(),cv::FONT_HERSHEY_PLAIN,1,1,0);
-        cv::Mat imText = cv::Mat(im_out.rows + textSize.height + 10, im_out.cols, im_out.type());
-        im_out.copyTo(imText.rowRange(0, im_out.rows).colRange(0, im_out.cols));
-        imText.rowRange(im_out.rows, imText.rows) = cv::Mat::zeros(textSize.height + 10, im_out.cols, im_out.type());
-        cv::putText(imText, s.str(), cv::Point(5, imText.rows-5), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(255,255,255),1.0);
+//            // Draw the affine deformated rectangles for the matched keypoints.
+//            cv::Point2f pt_tl = mvvFlowsPredictCorners[mvMatches[i].queryIdx][0] + pt_cur;
+//            cv::Point2f pt_tr = mvvFlowsPredictCorners[mvMatches[i].queryIdx][1] + pt_cur;
+//            cv::Point2f pt_bl = mvvFlowsPredictCorners[mvMatches[i].queryIdx][2] + pt_cur;
+//            cv::Point2f pt_br = mvvFlowsPredictCorners[mvMatches[i].queryIdx][3] + pt_cur;
 
-        string winname;
-        if (!isKeyFrame) {
-            if (mType == GYRO_PREDICT)
-                winname = "Search Only By Gyro. Predict";
-            else if (mType == GYRO_PREDICT_WITH_OPTICAL_FLOW_REFINED)
-                winname = "Search By Gyro. Predict and Optical Flow Refined";
-            else if (mType == GYRO_PREDICT_WITH_OPTICAL_FLOW_REFINED_CONSIDER_ILLUMINATION)
-                winname = "Search By Gyro. Predict and Optical Flow Refined Considering Illumination Change";
-            else if (mType == GYRO_PREDICT_WITH_OPTICAL_FLOW_REFINED_CONSIDER_ILLUMINATION_DEFORMATION)
-                winname = "Search By Gyro. Predict and Optical Flow Refined Considering Illumination Change and Deformation";
-            else if (mType == GYRO_PREDICT_WITH_OPTICAL_FLOW_REFINED_CONSIDER_ILLUMINATION_DEFORMATION_REGULAR)
-                winname = "Search By Gyro. Predict and Optical Flow Refined Considering Illumination Change and Deformation and Regular";
-            else if (mType == IMAGE_ONLY_OPTICAL_FLOW_CONSIDER_ILLUMINATION)
-                winname = "Image Only Optical Flow Considering Illumination Change";
-        }
-        else {
-            if (mType == GYRO_PREDICT)
-                winname = "(RefKF) Search Only By Gyro. Predict";
-            else if (mType == GYRO_PREDICT_WITH_OPTICAL_FLOW_REFINED)
-                winname = "(RefKF) Search By Gyro. Predict and Optical Flow Refined";
-            else if (mType == GYRO_PREDICT_WITH_OPTICAL_FLOW_REFINED_CONSIDER_ILLUMINATION)
-                winname = "(RefKF) Search By Gyro. Predict and Optical Flow Refined Considering Illumination Change";
-            else if (mType == GYRO_PREDICT_WITH_OPTICAL_FLOW_REFINED_CONSIDER_ILLUMINATION_DEFORMATION)
-                winname = "(RefKF) Search By Gyro. Predict and Optical Flow Refined Considering Illumination Change and Deformation";
-            else if (mType == GYRO_PREDICT_WITH_OPTICAL_FLOW_REFINED_CONSIDER_ILLUMINATION_DEFORMATION_REGULAR)
-                winname = "Search By Gyro. Predict and Optical Flow Refined Considering Illumination Change and Deformation and Regular";
-            else if (mType == IMAGE_ONLY_OPTICAL_FLOW_CONSIDER_ILLUMINATION)
-                winname = "(RefKF) Image Only Optical Flow Considering Illumination Change";
-        }
+//            cv::Scalar scalar = cv::Scalar(0,255,0);
+//            cv::line(im_out, pt_tl, pt_tr, scalar, 1);
+//            cv::line(im_out, pt_tr, pt_br, scalar, 1);
+//            cv::line(im_out, pt_bl, pt_br, scalar, 1);
+//            cv::line(im_out, pt_tl, pt_bl, scalar, 1);
+//        }
 
-        cv::imshow(winname, imText);
+//        stringstream s;
+//        s << fixed << setprecision(4) << "T: " << std::to_string(mTimeStamp)
+//          << ", KFs: " << mvKeysRef.size() << ", Pred. " << count_predict
+//          << " (" << 100.0 * count_predict/mvKeysRef.size() << " %)"
+//          << ", matched: " << mvMatches.size() << " (" << 100.0 * mvMatches.size()/count_predict << " %)"
+//          << ", cost: " << mTimeCost << " [Pred.: " << mTimeFeaturePredict
+//          << " (G.: " << mTimeCostGyroPredict <<  ", OF: " << mTimeCostOptFlow << ")"
+//          << ", FN: " << mTimeFindNearest << ", FO: " << mTimeFilterOut << "]";
 
-        cv::waitKey(1);
-    }
+//        //        // debug
+//        //        if(mvMatches.size() > count_predict)
+//        //            LOG(WARNING) << YELLOW << s.str() << RESET;
 
-}
 
-void GyroPredictMatcher::IntegrateGyroMeasurements()
+//        cv::Size textSize = cv::getTextSize(s.str(),cv::FONT_HERSHEY_PLAIN,1,1,0);
+//        cv::Mat imText = cv::Mat(im_out.rows + textSize.height + 10, im_out.cols, im_out.type());
+//        im_out.copyTo(imText.rowRange(0, im_out.rows).colRange(0, im_out.cols));
+//        imText.rowRange(im_out.rows, imText.rows) = cv::Mat::zeros(textSize.height + 10, im_out.cols, im_out.type());
+//        cv::putText(imText, s.str(), cv::Point(5, imText.rows-5), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(255,255,255),1.0);
+
+//        string winname;
+//        if (!isKeyFrame) {
+//            if (mType == GYRO_PREDICT)
+//                winname = "Search Only By Gyro. Predict";
+//            else if (mType == GYRO_PREDICT_WITH_OPTICAL_FLOW_REFINED)
+//                winname = "Search By Gyro. Predict and Optical Flow Refined";
+//            else if (mType == GYRO_PREDICT_WITH_OPTICAL_FLOW_REFINED_CONSIDER_ILLUMINATION)
+//                winname = "Search By Gyro. Predict and Optical Flow Refined Considering Illumination Change";
+//            else if (mType == GYRO_PREDICT_WITH_OPTICAL_FLOW_REFINED_CONSIDER_ILLUMINATION_DEFORMATION)
+//                winname = "Search By Gyro. Predict and Optical Flow Refined Considering Illumination Change and Deformation";
+//            else if (mType == GYRO_PREDICT_WITH_OPTICAL_FLOW_REFINED_CONSIDER_ILLUMINATION_DEFORMATION_REGULAR)
+//                winname = "Search By Gyro. Predict and Optical Flow Refined Considering Illumination Change and Deformation and Regular";
+//            else if (mType == IMAGE_ONLY_OPTICAL_FLOW_CONSIDER_ILLUMINATION)
+//                winname = "Image Only Optical Flow Considering Illumination Change";
+//        }
+//        else {
+//            if (mType == GYRO_PREDICT)
+//                winname = "(RefKF) Search Only By Gyro. Predict";
+//            else if (mType == GYRO_PREDICT_WITH_OPTICAL_FLOW_REFINED)
+//                winname = "(RefKF) Search By Gyro. Predict and Optical Flow Refined";
+//            else if (mType == GYRO_PREDICT_WITH_OPTICAL_FLOW_REFINED_CONSIDER_ILLUMINATION)
+//                winname = "(RefKF) Search By Gyro. Predict and Optical Flow Refined Considering Illumination Change";
+//            else if (mType == GYRO_PREDICT_WITH_OPTICAL_FLOW_REFINED_CONSIDER_ILLUMINATION_DEFORMATION)
+//                winname = "(RefKF) Search By Gyro. Predict and Optical Flow Refined Considering Illumination Change and Deformation";
+//            else if (mType == GYRO_PREDICT_WITH_OPTICAL_FLOW_REFINED_CONSIDER_ILLUMINATION_DEFORMATION_REGULAR)
+//                winname = "Search By Gyro. Predict and Optical Flow Refined Considering Illumination Change and Deformation and Regular";
+//            else if (mType == IMAGE_ONLY_OPTICAL_FLOW_CONSIDER_ILLUMINATION)
+//                winname = "(RefKF) Image Only Optical Flow Considering Illumination Change";
+//        }
+
+//        cv::imshow(winname, imText);
+
+//        cv::waitKey(1);
+//    }
+
+//}
+
+void GyroAidedTracker::IntegrateGyroMeasurements()
 {
     cv::Mat dR_ref_cur = cv::Mat::eye(3, 3, CV_32F);
     const int n = mvImuFromLastFrame.size()-1;
@@ -1285,7 +1282,7 @@ void GyroPredictMatcher::IntegrateGyroMeasurements()
     SetRcl(Rcl);
 }
 
-cv::Mat GyroPredictMatcher::IntegrateOneGyroMeasurement(cv::Point3f &gyro, double dt)
+cv::Mat GyroAidedTracker::IntegrateOneGyroMeasurement(cv::Point3f &gyro, double dt)
 {
     const float x = (gyro.x - mBias.x) * dt;
     const float y = (gyro.y - mBias.y) * dt;
@@ -1311,7 +1308,7 @@ cv::Mat GyroPredictMatcher::IntegrateOneGyroMeasurement(cv::Point3f &gyro, doubl
     return deltaR;
 }
 
-float GyroPredictMatcher::CheckHomography(
+float GyroAidedTracker::CheckHomography(
         cv::Mat &H21,
         float &score,
         std::vector<bool> &vbMatchesInliers,
@@ -1412,7 +1409,7 @@ float GyroPredictMatcher::CheckHomography(
 
 }
 
-float GyroPredictMatcher::CheckFundamental(
+float GyroAidedTracker::CheckFundamental(
         cv::Mat &F21,
         float &score,
         std::vector<bool> &vbMatchesInliers,
@@ -1513,7 +1510,7 @@ float GyroPredictMatcher::CheckFundamental(
  * usage: std::string msg = std::to_string(mTimeStamp) + " " + std::to_string(mTimeStampRef);
           SaveMsgToFile("test.txt", msg);
 */
-void GyroPredictMatcher::SaveMsgToFile(std::string filename, std::string &msg)
+void GyroAidedTracker::SaveMsgToFile(std::string filename, std::string &msg)
 {
     std::ofstream fp(mSaveFolderPath + filename, ofstream::app);
     if(!fp.is_open()) LOG(ERROR) << RED"cannot open: " << filename << RESET;

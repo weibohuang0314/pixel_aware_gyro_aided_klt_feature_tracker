@@ -31,12 +31,29 @@
 *.out
 *.app
 
+
+
 build/
 bin/
 lib/
 Thirdparty/glog/
+CMakeLists.txt.user
+
 Examples/ROS/ROS_Demo_Feature_Tracking/build/
 Examples/ROS/ROS_Demo_Feature_Tracking/bin/
 Examples/ROS/ROS_Demo_Feature_Tracking/lib/
 Examples/ROS/ROS_Demo_Feature_Tracking/output/
+Examples/ROS/ROS_Demo_Feature_Tracking/CMakeLists.txt.user
+
+data/SuperGluePretrainedNetwork/detected_points/MH_01_easy
+data/SuperGluePretrainedNetwork/detected_points/MH_02_easy
+data/SuperGluePretrainedNetwork/detected_points/MH_03_medium
+data/SuperGluePretrainedNetwork/detected_points/MH_04_difficult
+data/SuperGluePretrainedNetwork/detected_points/MH_05_difficult
+data/SuperGluePretrainedNetwork/detected_points/V1_01_easy
+data/SuperGluePretrainedNetwork/detected_points/V1_02_medium
+data/SuperGluePretrainedNetwork/detected_points/V1_03_difficult
+data/SuperGluePretrainedNetwork/detected_points/V2_01_easy
+data/SuperGluePretrainedNetwork/detected_points/V2_02_medium
+data/SuperGluePretrainedNetwork/detected_points/V2_03_difficult
 

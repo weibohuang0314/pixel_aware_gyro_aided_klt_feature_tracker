@@ -10,7 +10,7 @@
 typedef Eigen::Matrix<double, 5, 1> Vector5d;
 typedef Eigen::Matrix<double, 5, 5> Matrix5d;
 
-PatchMatch::PatchMatch(GyroPredictMatcher* pMatcher_,
+PatchMatch::PatchMatch(GyroAidedTracker* pMatcher_,
                        int halfPatchSize_, int iterations_, int pyramids_,
                        bool bHasGyroPredictInitial_, bool bInverse_,
                        bool bConsiderIllumination_, bool bConsiderAffineDeformation_,
@@ -127,9 +127,9 @@ void PatchMatch::OpticalFlowMultiLevel(){
             cv::line(img2_multi, mpMatcher->mvPtPredict[i], mvPtPyr2Un[i], cv::Scalar(0, 0, 255), 1); // red: predict to optical flow
         }
     }
-    if (mpMatcher->mType == GyroPredictMatcher::GYRO_PREDICT_WITH_OPTICAL_FLOW_REFINED)
+    if (mpMatcher->mType == GyroAidedTracker::GYRO_PREDICT_WITH_OPTICAL_FLOW_REFINED)
         cv::imshow("tracked multi level", img2_multi);
-    else if (mpMatcher->mType == GyroPredictMatcher::GYRO_PREDICT_WITH_OPTICAL_FLOW_REFINED_CONSIDER_ILLUMINATION)
+    else if (mpMatcher->mType == GyroAidedTracker::GYRO_PREDICT_WITH_OPTICAL_FLOW_REFINED_CONSIDER_ILLUMINATION)
         cv::imshow("tracked multi level (considering illumination change)", img2_multi);
     cv::waitKey(1);
     */

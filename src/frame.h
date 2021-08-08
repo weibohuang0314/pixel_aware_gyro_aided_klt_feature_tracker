@@ -16,12 +16,11 @@ public:
     void DetectKeyPoints();
 
     // read features from file. the feature is detected by SuperPoint (Paper - "SuperPoint: Self-supervised interest point detection and description")
-    void LoadKeypointFromSuperPoint(std::string path);
+    void LoadDetectedKeypointFromFile(std::string path);
 
     void UndistortPoints(std::vector<cv::Point2f> &corners);
 
-    void Display(std::string winname);
-    void Display(std::string winname, bool compare_with_SuperGlue);
+    //void Display(std::string winname);
     void Display(std::string winname, int drawFlowType, bool bDrawPatch, bool bDrawMistracks, bool bDrawGyroPredictPosition=true);
 
     void SetCurFrameWithoutGeometryValid(Frame* pframe) {curFrameWithoutGeometryValid = pframe;}

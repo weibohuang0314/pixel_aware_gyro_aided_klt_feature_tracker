@@ -5,7 +5,6 @@
 
         <!-- set timedelay from bash input -->
         <arg name="manuallyAddTimeDelay" default = "0.000" />
-        <!--<arg name="output_file" default = "/../output/timedelay_effect/TD_$(arg manuallyAddTimeDelay)/" />-->
         <arg name="output_file" default = "/../output/" />
 
         <node pkg="ROS_Demo_Feature_Tracking" type="feature_tracker" name="feature_tracker"  args="$(arg config_file)" cwd="node" output="screen">
