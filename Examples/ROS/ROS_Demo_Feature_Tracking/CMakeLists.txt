@@ -3,20 +3,15 @@
 # set(USE_OPENCV_2_4 FALSE)
 ################################################################################
 cmake_minimum_required(VERSION 2.4.6)
-project(pixel_aware_gyro_aided_klt_feature_tracker)
+include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 
-# include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
-# rosbuild_init()
-# IF(NOT ROS_BUILD_TYPE)
-#   SET(ROS_BUILD_TYPE Release)
-# ENDIF()
-# MESSAGE("Build type: " ${ROS_BUILD_TYPE})
+rosbuild_init()
 
-
-IF(NOT CMAKE_BUILD_TYPE)
-    SET(CMAKE_BUILD_TYPE Release)
+IF(NOT ROS_BUILD_TYPE)
+  SET(ROS_BUILD_TYPE Release)
 ENDIF()
-MESSAGE("Build type: " ${CMAKE_BUILD_TYPE})
+
+MESSAGE("Build type: " ${ROS_BUILD_TYPE})
 
 #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall  -O3 -march=native ")
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall  -O3 -march=native")
@@ -65,41 +60,34 @@ LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
      endif()
 # endif()
 
-# find_package(rosbag REQUIRED )
+find_package(rosbag REQUIRED )
 find_package(Eigen3 3.1.0 REQUIRED)
 find_package(Pangolin REQUIRED)
 
 include_directories(
-   ${PROJECT_SOURCE_DIR}
-   ${PROJECT_SOURCE_DIR}/include
-# ${rosbag_INCLUDE_DIRS}
+#${PROJECT_SOURCE_DIR}
+${rosbag_INCLUDE_DIRS}
+${PROJECT_SOURCE_DIR}
+${PROJECT_SOURCE_DIR}/../../../
+${PROJECT_SOURCE_DIR}/../../../src
+${PROJECT_SOURCE_DIR}/../../../include
 )
 
 set(LINK_LIBS
-# ${rosbag_LIBRARIES}
+${rosbag_LIBRARIES}
 ${OpenCV_LIBS}
 ${EIGEN3_LIBS}
-${PROJECT_SOURCE_DIR}/Thirdparty/glog/lib/libglog.so
-# ${PROJECT_SOURCE_DIR}/compared_methods/klt_imu_tracker/lib/libklt_imu_tracker_gpu.so
+${PROJECT_SOURCE_DIR}/../../../Thirdparty/glog/lib/libglog.so
+${PROJECT_SOURCE_DIR}/../../../lib/libpixel_aware_gyro_aided_klt_feature_tracker.so
 )
 
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
-add_library(${PROJECT_NAME} SHARED
-    src/common.h
-    src/frame.h
-    src/frame.cpp
-    src/imu_types.h
-    src/imu_types.cpp
-    src/patch_match.h
-    src/patch_match.cpp
-    src/gyro_predict_matcher.h
-    src/gyro_predict_matcher.cpp
-    src/utils.h
-    src/utils.cpp
 
-    src/ORBDetectAndDespMatcher.h
-    src/ORBDetectAndDespMatcher.cpp
-    src/ORBextractor.h
-    src/ORBextractor.cc
-    )
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 
+# feature_tracker
+# first predict keypoints and then detect more keypoints
+rosbuild_add_executable(feature_tracker
+src/feature_tracker.cpp )
+
+target_link_libraries(feature_tracker
+${LINK_LIBS})

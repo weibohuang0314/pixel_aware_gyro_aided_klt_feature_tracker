@@ -1,0 +1,64 @@
+%YAML:1.0
+
+#--------------------------------------------------------------------------------------------
+# ROS topics
+#--------------------------------------------------------------------------------------------
+imuTopic: "/OMD/imu0"
+leftImageTopic: "/OMD/cam0/image_raw" #"/camera/color/image_raw"
+
+# readFromRosBag: 0   # 1: read from rosbag; 0: subscribe from rosbag (you should 'rosbag play ...')
+# rosBag: ""
+
+#--------------------------------------------------------------------------------------------
+# Paramters!
+#--------------------------------------------------------------------------------------------
+downSampleRate: 1  # default: 1
+KeyPointNumber: 512
+ThresholdOfPredictNewKeyPoint: 1.0
+HalfPatchSize: 5
+
+#--------------------------------------------------------------------------------------------
+# used for publisher_node!
+#--------------------------------------------------------------------------------------------
+dataset: "OMD"
+DatasetDir: "/home/hri/Documents/SLAM_Dataset/OMD/Primary_Data_Segments/occlusion_2_unconstrained"
+IMUCsvFile:   "/home/hri/Documents/SLAM_Dataset/OMD/Primary_Data_Segments/occlusion_2_unconstrained/imu.csv"
+
+#--------------------------------------------------------------------------------------------
+# Camera Parameters. Adjust them!
+#--------------------------------------------------------------------------------------------
+Camera.type: "PinHole"
+
+# Camera calibration and distortion parameters (OpenCV) 
+Camera.fx: 569.031
+Camera.fy: 568.822
+Camera.cx: 338.766
+Camera.cy: 221.664
+
+Camera.k1: 0.089924
+Camera.k2: -0.192997
+Camera.p1: -0.009890
+Camera.p2: 0.003235
+
+# Camera resolution
+Camera.width: 640
+Camera.height: 480
+
+# Camera frames per second 
+Camera.fps: 20 #30
+
+# Color order of the images (0: BGR, 1: RGB. It is ignored if images are grayscale)
+Camera.RGB: 1
+
+Tbc:
+    [1, 0, 0, 0,
+     0, 1, 0, 0,
+     0, 0, 1, 0,
+     0.0, 0.0, 0.0, 1.0]
+
+# IMU noise
+IMU.NoiseGyro: 1.7e-4       # rad/s/sqrt(Hz)
+IMU.NoiseAcc: 2.0000e-3     # m/s^2/sqrt(Hz)
+IMU.GyroWalk: 1.9393e-05    # rad/s^2/sqrt(Hz)
+IMU.AccWalk: 3.0000e-03     # m/s^3/sqrt(Hz)
+IMU.Frequency: 300 #500

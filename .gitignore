@@ -30,3 +30,11 @@
 *.exe
 *.out
 *.app
+
+build/
+bin/
+lib/
+Examples/ROS/ROS_Demo_Feature_Tracking/build/
+Examples/ROS/ROS_Demo_Feature_Tracking/bin/
+Examples/ROS/ROS_Demo_Feature_Tracking/lib/
+Examples/ROS/ROS_Demo_Feature_Tracking/output/

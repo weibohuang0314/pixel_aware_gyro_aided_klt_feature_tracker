@@ -1,4 +1,4 @@
-prefix=/home/hri/rosbuild_ws/package_dir/gyro_predict_matcher/Thirdparty/glog
+prefix=/home/hri/rosbuild_ws/package_dir/pixel_aware_gyro_aided_klt_feature_tracker/Thirdparty/glog
 exec_prefix=${prefix}
 libdir=${exec_prefix}/lib
 includedir=${prefix}/include
