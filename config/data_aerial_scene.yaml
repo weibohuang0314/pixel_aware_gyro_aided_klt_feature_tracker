@@ -1,0 +1,84 @@
+%YAML:1.0
+
+#--------------------------------------------------------------------------------------------
+# ROS topics
+#--------------------------------------------------------------------------------------------
+imuTopic: "/aerial_scene/imu0"
+leftImageTopic: "/aerial_scene/cam0/image_raw" #"/camera/color/image_raw"
+
+readFromRosBag: 1   # 1: read from rosbag; 0: subscribe from rosbag (you should 'rosbag play ...')
+# rosBag: ""
+
+#--------------------------------------------------------------------------------------------
+# Paramters!
+#--------------------------------------------------------------------------------------------
+downSampleRate: 1  # default: 1
+KeyPointNumber: 300
+ThresholdOfPredictNewKeyPoint: 1.0
+HalfPatchSize: 5
+
+#--------------------------------------------------------------------------------------------
+# used for publisher_node!
+#--------------------------------------------------------------------------------------------
+dataset: "aerial_scene"
+DatasetDir: "/home/hri/Documents/SLAM_Dataset/data_aerial_scene"
+IMUCsvFile:   "/home/hri/Documents/SLAM_Dataset/data_aerial_scene/aerial_imu.log"
+#ROSBagSavePath: "/home/hri/Documents/SLAM_Dataset/data_aerial_scene/aerial_scene.bag"
+
+
+#--------------------------------------------------------------------------------------------
+# Camera Parameters. Adjust them!
+#--------------------------------------------------------------------------------------------
+Camera.type: "PinHole"
+
+# Camera calibration and distortion parameters (OpenCV) 
+Camera.fx: 286.338
+Camera.fy: 286.526
+Camera.cx: 165.017
+Camera.cy: 119.277
+
+Camera.k1: -0.354377
+Camera.k2: 0.146280
+Camera.p1: 0
+Camera.p2: 0
+
+# Camera resolution
+Camera.width: 320
+Camera.height: 240
+
+# Camera frames per second 
+Camera.fps: 30
+
+# Color order of the images (0: BGR, 1: RGB. It is ignored if images are grayscale)
+Camera.RGB: 1
+
+#--------------------------------------------------------------------------------------------
+# aerial_imu_shape Parameters.
+#--------------------------------------------------------------------------------------------
+ba:
+    [931.8, 926.4, 1040.4]
+Ca:
+    [0.023693, 0, 0,
+     0, 0, -0.023693,
+     0, -0.023693, 0]
+
+bg:
+    [1090.0, 952.3, 1013.2]
+Cw:
+    [-0.003350, 0, 0,
+     0, 0, 0.003350,
+     0, -0.003350, 0]
+
+#--------------------------------------------------------------------------------------------
+Tbc:
+    [1, 0, 0, 0,
+     0, 1, 0, 0,
+     0, 0, 1, 0,
+     0.0, 0.0, 0.0, 1.0]
+
+# IMU noise(useless)
+IMU.NoiseGyro: 1.7e-4       # rad/s/sqrt(Hz)
+IMU.NoiseAcc: 2.0000e-3     # m/s^2/sqrt(Hz)
+IMU.GyroWalk: 1.9393e-05    # rad/s^2/sqrt(Hz)
+IMU.AccWalk: 3.0000e-03     # m/s^3/sqrt(Hz)
+IMU.Frequency: 100 #500
