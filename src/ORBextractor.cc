@@ -63,7 +63,7 @@
 #include "ORBextractor.h"
 
 #include<chrono>
-//#include "System.h"
+#include <iostream>
 
 using namespace cv;
 using namespace std;
@@ -826,7 +826,6 @@ void ORBextractor::ComputeKeyPointsOctTree(vector<vector<KeyPoint> >& allKeypoin
                         vToDistributeKeys.push_back(*vit);
                     }
                 }
-
             }
         }
 
@@ -1054,14 +1053,12 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
 
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 
-//std::cout << "step 1" << std::endl;
     /// Pre-compute the scale pyramid        /// 2.434ms
     ComputePyramid(image);
 
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();    // start timer
     mTimeOfComputePyramid = 1000 * std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
 
-//std::cout << "step 2" << std::endl;
     /// compute KeyPoints Oct Tree           /// 8-9ms
     std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
 
@@ -1072,7 +1069,6 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
     std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();    // start timer
     mTimeOfComputeKeyPointsOctTree = 1000 * std::chrono::duration_cast<std::chrono::duration<double> >(t4 - t3).count();
 
-//std::cout << "step 3" << std::endl;
     /// compute descriptors                  /// 4-8ms
     Mat descriptors;
 
@@ -1125,6 +1121,65 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
 
     std::chrono::steady_clock::time_point t6 = std::chrono::steady_clock::now();
     mTimeOfComputeDescriptor = 1000 * std::chrono::duration_cast<std::chrono::duration<double> >(t6 - t5).count();
+}
+
+void ORBextractor::DetectFeatures(InputArray _image, InputArray _mask, vector<KeyPoint>& _keypoints)
+{
+    if(_image.empty())
+        return;
+
+    Mat image = _image.getMat();
+    Mat mask = _mask.getMat();
+    assert(image.type() == CV_8UC1 );
+
+    std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+
+    /// Pre-compute the scale pyramid        /// 2.434ms
+    ComputePyramid(image);
+
+    std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();    // start timer
+    mTimeOfComputePyramid = 1000 * std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
+
+    /// compute KeyPoints Oct Tree           /// 8-9ms
+    std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
+
+    vector < vector<KeyPoint> > allKeypoints;
+    ComputeKeyPointsOctTree(allKeypoints);
+
+    std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();    // start timer
+    mTimeOfComputeKeyPointsOctTree = 1000 * std::chrono::duration_cast<std::chrono::duration<double> >(t4 - t3).count();
+
+    int nkeypoints = 0;
+    for (int level = 0; level < nlevels; ++level)
+        nkeypoints += (int)allKeypoints[level].size();
+    _keypoints.clear();
+    _keypoints.reserve(nkeypoints);
+
+    for (int level = 0; level < nlevels; ++level)
+    {
+        vector<KeyPoint>& keypoints = allKeypoints[level];
+        int nkeypointsLevel = (int)keypoints.size();
+
+        if(nkeypointsLevel==0)
+            continue;
+
+        // Scale keypoint coordinates
+        if (level != 0)
+        {
+            float scale = mvScaleFactor[level]; //getScale(level, firstLevel, scaleFactor);
+            for (vector<KeyPoint>::iterator keypoint = keypoints.begin(),
+                 keypointEnd = keypoints.end(); keypoint != keypointEnd; ++keypoint){
+                keypoint->pt *= scale;
+            }
+        }
+
+        // And add the keypoints to the output
+        for(auto key:keypoints){
+            // discard the points that mask is zero
+            if(mask.at<uchar>(int(key.pt.y), int(key.pt.x)))
+                _keypoints.push_back(key);
+        }
+    }
 }
 
 void ORBextractor::ComputePyramid(cv::Mat image)

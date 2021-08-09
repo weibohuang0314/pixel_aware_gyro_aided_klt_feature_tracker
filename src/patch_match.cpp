@@ -1,5 +1,5 @@
 #include "patch_match.h"
-#include "gyro_predict_matcher.h"
+#include "gyro_aided_tracker.h"
 #include <thread>
 #include <pthread.h>
 #include <omp.h>
@@ -25,7 +25,7 @@ PatchMatch::PatchMatch(GyroAidedTracker* pMatcher_,
     mbCalculateNCC(bCalculateNCC_)
 {
     // parameters for regularization penalty term
-    mLambda = 1.0f; // TODO: tune the parameters
+    mLambda = 1.0f;
     mAlpha = 0.5f;
     mMaxDistance = 25;
     mInvLogMaxDist = 1.0 / (std::log(mAlpha * mMaxDistance + 1));
@@ -69,7 +69,6 @@ void PatchMatch::OpticalFlowMultiLevel(){
             mvPtPyr2Un.push_back(mpMatcher->mvKeysRefUn[i].pt);
         }
     }
-    //LOG(INFO) << "mN: " << mN << ", mvPtPyr2Un.size(): " << mvPtPyr2Un.size() << ", mpMatcher->mvKeysRef.size: " << mpMatcher->mvKeysRef.size();
 
     // coarse-to-fine LK tracking in pyramids
     mvSuccess.clear(); mvSuccess.resize(mN);
@@ -81,31 +80,18 @@ void PatchMatch::OpticalFlowMultiLevel(){
         mLevel = level;
         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 
-//        if (mbConsiderIllumination)
-        {
-            // optical flow, considering the illumination chanage
-            // use opencv parallel_for_ function
-            cv::parallel_for_(cv::Range(0,mN), [&](const cv::Range& range){
-                for (auto i = range.start; i < range.end; i++)
-                    OpticalFlowConsideringIlluminationChange_onePixel(i, mbRegularizationPenalty);
-            });
-        }
-//        else {
-//            // normal optical flow
-//            cv::parallel_for_(cv::Range(0,mN), [&](const cv::Range& range){
-//                for (auto i = range.start; i < range.end; i++)
-//                    OpticalFlowCommonMethod_onePixel(i);
-//            });
-//        }
+        // use opencv parallel_for_ function
+        cv::parallel_for_(cv::Range(0,mN), [&](const cv::Range& range){
+            for (auto i = range.start; i < range.end; i++)
+                OpticalFlowConsideringIlluminationChange_onePixel(i,
+                                                                  mbConsiderIllumination,
+                                                                  mbConsiderAffineDeformation,
+                                                                  mbRegularizationPenalty);
+        });
 
         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
         double t = std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
-        //LOG(INFO) << "      level: " << mLevel << ", time cost: " << t;
-
     }
-
-    // Undistort
-//    UnDistortPoints();
 
     // Distort
     DistortPoints();
@@ -136,148 +122,12 @@ void PatchMatch::OpticalFlowMultiLevel(){
 
 }
 
-/**
- * Assumption: I1(x, y, t) = I2(x + u, y + v, t + 1)
- *        ---> I1(x, y, t) \Approx. to I1(x, y, t) + dI2/dx * u + dI2/dy * v + dI/dt
- * @brief OpticalFlowCommonMethod_onePixel
- */
-// default: not use
-/*void PatchMatch::OpticalFlowCommonMethod_onePixel(const int i)
-{
-    if (!mvGyroPredictStatus[i])
-        return;
-
-    // Use distorted points to perform the patch match on raw image
-    cv::Point2f pt = mvPtPyr1Un[i];
-    cv::Point2f nextPt;
-    if (mLevel == mPyramids - 1){
-        nextPt = mvPtPyr2Un[i] * (float)(1./(1<<mLevel));
-    }else {
-        nextPt = mvPtPyr2Un[i] * 2.0f;
-    }
-
-    // dx, dy need to be estimated.
-    float dx = nextPt.x - pt.x;
-    float dy = nextPt.y - pt.y;
-
-    float cost = 0, lastCost = 0;
-    bool succ = true;   // indicate if this point succeeded
-
-    // calculate the warp patch (i.e., affine deformation patch)
-    cv::Mat warp_patch(cv::Size(mHalfPatchSize*2+1, mHalfPatchSize*2+1), CV_32FC2);
-    if (mbConsiderAffineDeformation) {
-        cv::Mat A = mpMatcher->mvAffineDeformationMatrix[i];
-        assert(A.empty() == false);
-        for (int x = - mHalfPatchSize; x <= mHalfPatchSize; x ++) {
-            for (int y = - mHalfPatchSize; y <= mHalfPatchSize; y++) {
-                float wx = A.at<float>(0,0) * x + A.at<float>(0,1) * y;
-                float wy = A.at<float>(1,0) * x + A.at<float>(1,1) * y;
-                warp_patch.at<Vec2f>(x + mHalfPatchSize, y + mHalfPatchSize)[0] = wx;
-                warp_patch.at<Vec2f>(x + mHalfPatchSize, y + mHalfPatchSize)[1] = wy;
-            }
-        }
-    }
-
-    // Gauss-Newton iterations
-    Eigen::Matrix2d H = Eigen::Matrix2d::Zero();    // hessian
-    Eigen::Vector2d b = Eigen::Vector2d::Zero();    // bias
-    Eigen::Vector2d J;  // jacobian
-
-    for(int iter = 0; iter < mIterations; iter++) {
-        if (mbInverse == false) {
-            H = Eigen::Matrix2d::Zero();
-            b = Eigen::Vector2d::Zero();
-        } else{
-            // only reset b
-            b = Eigen::Vector2d::Zero();
-        }
-
-
-        // compute cost and jacobian
-        cost = 0;
-        for (int x = - mHalfPatchSize; x <= mHalfPatchSize; x ++) {
-            for (int y = - mHalfPatchSize; y <= mHalfPatchSize; y++) {
-                float wx = x, wy = y;
-                if (mbConsiderAffineDeformation) {
-                    wx = warp_patch.at<Vec2f>(x + mHalfPatchSize, y + mHalfPatchSize)[0];
-                    wy = warp_patch.at<Vec2f>(x + mHalfPatchSize, y + mHalfPatchSize)[1];
-                }
-
-                float error = GetPixelValue(mvImgPyr2[mLevel], pt.x + dx + wx, pt.y + dy + wy)
-                        - GetPixelValue(mvImgPyr1[mLevel], pt.x + x, pt.y + y);
-
-                // Jacobian
-                if (mbInverse == false) {
-                    // For each new estimation, we calculate a new Jacobian
-                    float Ix, Iy;
-                    Ix = 0.5 * (GetPixelValue(mvImgPyr2[mLevel], pt.x + dx + wx + 1, pt.y + dy + wy)
-                                - GetPixelValue(mvImgPyr2[mLevel], pt.x + dx + wx - 1, pt.y + dy + wy));
-                    Iy = 0.5 * (GetPixelValue(mvImgPyr2[mLevel], pt.x + dx + wx, pt.y + dy + wy + 1)
-                                - GetPixelValue(mvImgPyr2[mLevel], pt.x + dx + wx, pt.y + dy + wy - 1));
-                    J = Eigen::Vector2d(Ix, Iy);
-                } else if (iter == 0)  {
-                    // In inverse mode, J keeps same for all iterations.
-                    // Note this J does not change when dx, dy is updated, so we can store it
-                    // and only compute error.
-                    float Ix = 0.5 * (GetPixelValue(mvImgPyr1[mLevel], pt.x + x + 1, pt.y + y)
-                                      - GetPixelValue(mvImgPyr1[mLevel], pt.x + x - 1, pt.y + y));
-                    float Iy = 0.5 * (GetPixelValue(mvImgPyr1[mLevel], pt.x + x, pt.y + y + 1)
-                                      - GetPixelValue(mvImgPyr1[mLevel], pt.x + x, pt.y + y - 1));
-                    J = Eigen::Vector2d(Ix, Iy);
-                }
-
-                // compute H, b and set cost
-                b += - J * error;
-                cost += error * error;
-                if (mbInverse == false || iter == 0) {
-                    H += J * J.transpose();
-                }
-
-            } // end for: y \in [- half_patch_size, half_patch_size]
-        } // end for: x \in [- half_patch_size, half_patch_size]
-
-        // Compute update
-        Eigen::Vector2d update = H.ldlt().solve(b); // solve: A * x = b
-
-        // Check termination condition
-        if (std::isnan(update[0])) {
-            // sometimes occured when we have a black or white patch and H is irreversible
-            LOG(INFO) << "update is nan";
-            succ = false;
-            break;
-        }
-
-        if (iter > 0 && cost > lastCost)
-            break;
-
-        // Update dx, dy
-        dx += update[0];
-        dy += update[1];
-
-        lastCost = cost;
-        succ = true;
-
-        // Check converge
-        if (update.norm() < 1e-2)
-            break; // converge
-
-    } // end for: iter \in [0, iterations)
-
-    mvPtPyr2Un[i] = pt + cv::Point2f(dx, dy);
-
-    if (mLevel == 0){
-        mvSuccess[i] = succ;
-        mvPixelErrorsOfPatchMatched[i] = std::sqrt(lastCost * mWinSizeInv);
-    }
-
-}
-*/
 
 
 /**
  * Optical flow considering the illumination change.
  * Assumption: (1 + g(x, y)) * I1(x, y, t) = I2(x + u, y + v, t + 1) + b(x, y)
- * Note: If mbConsiderAffineDeformation ==  true, then we consider the affine
+ * Note: If bConsiderAffineDeformation == true, then we consider the affine
  *       deformation of the patch. The affine deformation matrix A modeled as:
  *              A = [1 + dxx, dxy;
  *                  dyx, 1 + dyy].
@@ -295,7 +145,11 @@ void PatchMatch::OpticalFlowMultiLevel(){
  *
  * @brief OpticalFlowConsideringIlluminationChange_onePixel
  */
-void PatchMatch::OpticalFlowConsideringIlluminationChange_onePixel(const int i, const bool bRegularizationPenalty)
+void PatchMatch::OpticalFlowConsideringIlluminationChange_onePixel(
+        const int i,
+        const bool bConsiderIllumination,
+        const bool bConsiderAffineDeformation,
+        const bool bRegularizationPenalty)
 {
     if (!mvGyroPredictStatus[i])
         return;
@@ -322,7 +176,7 @@ void PatchMatch::OpticalFlowConsideringIlluminationChange_onePixel(const int i, 
 
     // calculate the warp patch (i.e., affine deformation patch)
     cv::Mat warp_patch(cv::Size(mHalfPatchSize*2+1, mHalfPatchSize*2+1), CV_32FC2);
-    if (mbConsiderAffineDeformation) {
+    if (bConsiderAffineDeformation) {
         cv::Mat A = mpMatcher->mvAffineDeformationMatrix[i];
         assert(A.empty() == false);
         for (int x = - mHalfPatchSize; x <= mHalfPatchSize; x ++) {
@@ -360,7 +214,7 @@ void PatchMatch::OpticalFlowConsideringIlluminationChange_onePixel(const int i, 
         for (int y = - mHalfPatchSize; y <= mHalfPatchSize; y ++) {
             for (int x = - mHalfPatchSize; x <= mHalfPatchSize; x++) {
                 float wx = x, wy = y;
-                if (mbConsiderAffineDeformation) {
+                if (bConsiderAffineDeformation) {
                     wx = warp_patch.at<Vec2f>(x + mHalfPatchSize, y + mHalfPatchSize)[0];
                     wy = warp_patch.at<Vec2f>(x + mHalfPatchSize, y + mHalfPatchSize)[1];
                 }
@@ -372,43 +226,40 @@ void PatchMatch::OpticalFlowConsideringIlluminationChange_onePixel(const int i, 
             }
         }
 
-//        cv::parallel_for_(cv::Range(0,N_index), [&](const cv::Range& range){
-//            for (auto i = range.start; i < range.end; i++){
-            for (auto i = 0; i < N_index; i++){
-                int x = vPt_x_y[i].x, y = vPt_x_y[i].y;
-                float wx = vPt_wx_wy[i].x, wy = vPt_wx_wy[i].y;
+        for (auto i = 0; i < N_index; i++){
+            int x = vPt_x_y[i].x, y = vPt_x_y[i].y;
+            float wx = vPt_wx_wy[i].x, wy = vPt_wx_wy[i].y;
 
-                float error = GetPixelValue(mvImgPyr2[mLevel], pt.x + dx + wx, pt.y + dy + wy) + db
-                        - (1.0f + dg) * GetPixelValue(mvImgPyr1[mLevel], pt.x + x, pt.y + y);
+            float error = GetPixelValue(mvImgPyr2[mLevel], pt.x + dx + wx, pt.y + dy + wy) + db
+                    - (1.0f + dg) * GetPixelValue(mvImgPyr1[mLevel], pt.x + x, pt.y + y);
 
-                // Jacobian
-                Eigen::Vector4d J;
-                if (mbInverse == false) {
-                    // For each new estimation, we calculate a new Jacobian
-                    float Ix = 0.5 * (GetPixelValue(mvImgPyr2[mLevel], pt.x + dx + wx + 1, pt.y + dy + wy)
-                                      - GetPixelValue(mvImgPyr2[mLevel], pt.x + dx + wx - 1, pt.y + dy + wy));
-                    float Iy = 0.5 * (GetPixelValue(mvImgPyr2[mLevel], pt.x + dx + wx, pt.y + dy + wy + 1)
-                                      - GetPixelValue(mvImgPyr2[mLevel], pt.x + dx + wx, pt.y + dy + wy - 1));
-                    float de_dg = - GetPixelValue(mvImgPyr1[mLevel], pt.x, pt.y);
-                    J = Eigen::Vector4d(Ix, Iy, de_dg, 1);
-                } else if (iter == 0)  {
-                    // In inverse mode, J keeps same for all iterations.
-                    // Note this J does not change when dx, dy is updated, so we can store it
-                    // and only compute error.
-                    float Ix = 0.5 * (GetPixelValue(mvImgPyr1[mLevel], pt.x + x + 1, pt.y + y)
-                                      - GetPixelValue(mvImgPyr1[mLevel], pt.x + x - 1, pt.y + y));
-                    float Iy = 0.5 * (GetPixelValue(mvImgPyr1[mLevel], pt.x + x, pt.y + y + 1)
-                                      - GetPixelValue(mvImgPyr1[mLevel], pt.x + x, pt.y + y - 1));
-                    float de_dg = - GetPixelValue(mvImgPyr1[mLevel], pt.x, pt.y);
-                    J = Eigen::Vector4d(Ix, Iy, de_dg, 1);
-                }
-
-                vJ[i] = J;
-                vE[i] = error;
-                vFlag[i] = true;
+            // Jacobian
+            Eigen::Vector4d J;
+            if (mbInverse == false) {
+                // For each new estimation, we calculate a new Jacobian
+                float Ix = 0.5 * (GetPixelValue(mvImgPyr2[mLevel], pt.x + dx + wx + 1, pt.y + dy + wy)
+                                  - GetPixelValue(mvImgPyr2[mLevel], pt.x + dx + wx - 1, pt.y + dy + wy));
+                float Iy = 0.5 * (GetPixelValue(mvImgPyr2[mLevel], pt.x + dx + wx, pt.y + dy + wy + 1)
+                                  - GetPixelValue(mvImgPyr2[mLevel], pt.x + dx + wx, pt.y + dy + wy - 1));
+                float de_dg = - GetPixelValue(mvImgPyr1[mLevel], pt.x, pt.y);
+                J = Eigen::Vector4d(Ix, Iy, de_dg, 1);
+            } else if (iter == 0)  {
+                // In inverse mode, J keeps same for all iterations.
+                // Note this J does not change when dx, dy is updated, so we can store it
+                // and only compute error.
+                float Ix = 0.5 * (GetPixelValue(mvImgPyr1[mLevel], pt.x + x + 1, pt.y + y)
+                                  - GetPixelValue(mvImgPyr1[mLevel], pt.x + x - 1, pt.y + y));
+                float Iy = 0.5 * (GetPixelValue(mvImgPyr1[mLevel], pt.x + x, pt.y + y + 1)
+                                  - GetPixelValue(mvImgPyr1[mLevel], pt.x + x, pt.y + y - 1));
+                float de_dg = - GetPixelValue(mvImgPyr1[mLevel], pt.x, pt.y);
+                J = Eigen::Vector4d(Ix, Iy, de_dg, 1);
             }
 
-//        });
+            vJ[i] = J;
+            vE[i] = error;
+            vFlag[i] = true;
+        }
+
 
         cost = 0;
         for (size_t i = 0; i < N_index; i ++) {
@@ -451,7 +302,6 @@ void PatchMatch::OpticalFlowConsideringIlluminationChange_onePixel(const int i, 
         // Check termination condition
         if (std::isnan(update[0])) {
             // sometimes occured when we have a black or white patch and H is irreversible
-            // LOG(INFO) << "update is nan";
             succ = false;
             break;
         }
@@ -462,7 +312,7 @@ void PatchMatch::OpticalFlowConsideringIlluminationChange_onePixel(const int i, 
         // Update dx, dy
         dx += update[0];
         dy += update[1];
-        if (mbConsiderIllumination){
+        if (bConsiderIllumination){
             dg += update[2];
             db += update[3];
         }
@@ -485,7 +335,7 @@ void PatchMatch::OpticalFlowConsideringIlluminationChange_onePixel(const int i, 
 
     // calculate zero-normilized cross correlation
     if(mbCalculateNCC){
-        if (mbConsiderAffineDeformation){
+        if (bConsiderAffineDeformation){
             mvNcc[i] = NCC(mHalfPatchSize, mpMatcher->mImgGrayRef, mpMatcher->mImgGrayCur,
                            mvPtPyr1Un[i],  mvPtPyr2Un[i], mpMatcher->mvAffineDeformationMatrix[i]);
         }else {
@@ -495,40 +345,6 @@ void PatchMatch::OpticalFlowConsideringIlluminationChange_onePixel(const int i, 
     }else {
         mvNcc[i] = 1;
     }
-}
-
-void PatchMatch::ThreadComputeErrorAndJocabianForOnePoint(int index, cv::Point2f pt, float dx, float dy,
-                                                          float x, float y, float wx, float wy, float db, float dg,
-                                                          vector<Eigen::Vector4d> &vJ, vector<float> &vE, vector<bool> &vFlag)
-{
-    float error = GetPixelValue(mvImgPyr2[mLevel], pt.x + dx + wx, pt.y + dy + wy) + db
-            - (1.0f + dg) * GetPixelValue(mvImgPyr1[mLevel], pt.x + x, pt.y + y);
-
-    // Jacobian
-    Eigen::Vector4d J;
-    if (mbInverse == false) {
-        // For each new estimation, we calculate a new Jacobian
-        float Ix = 0.5 * (GetPixelValue(mvImgPyr2[mLevel], pt.x + dx + wx + 1, pt.y + dy + wy)
-                          - GetPixelValue(mvImgPyr2[mLevel], pt.x + dx + wx - 1, pt.y + dy + wy));
-        float Iy = 0.5 * (GetPixelValue(mvImgPyr2[mLevel], pt.x + dx + wx, pt.y + dy + wy + 1)
-                          - GetPixelValue(mvImgPyr2[mLevel], pt.x + dx + wx, pt.y + dy + wy - 1));
-        float de_dg = - GetPixelValue(mvImgPyr1[mLevel], pt.x, pt.y);
-        J = Eigen::Vector4d(Ix, Iy, de_dg, 1);
-    } else if (index == 0)  {
-        // In inverse mode, J keeps same for all iterations.
-        // Note this J does not change when dx, dy is updated, so we can store it
-        // and only compute error.
-        float Ix = 0.5 * (GetPixelValue(mvImgPyr1[mLevel], pt.x + x + 1, pt.y + y)
-                          - GetPixelValue(mvImgPyr1[mLevel], pt.x + x - 1, pt.y + y));
-        float Iy = 0.5 * (GetPixelValue(mvImgPyr1[mLevel], pt.x + x, pt.y + y + 1)
-                          - GetPixelValue(mvImgPyr1[mLevel], pt.x + x, pt.y + y - 1));
-        float de_dg = - GetPixelValue(mvImgPyr1[mLevel], pt.x, pt.y);
-        J = Eigen::Vector4d(Ix, Iy, de_dg, 1);
-    }
-
-    vJ[index] = J;
-    vE[index] = error;
-    vFlag[index] = true;
 }
 
 // Set mpMatcher
@@ -570,32 +386,6 @@ inline float PatchMatch::GetPixelValue(const cv::Mat &img, float x, float y) con
     return pixel;
 }
 
-//void PatchMatch::UnDistortPoints(){
-//    if (mpMatcher->mDistCoef.at<float>(0) == 0.0)
-//        mvPtPyr2Un = mvPtPyr2;
-//    else {
-//        // Fill matrix with points
-//        cv::Mat mat(mN, 2, CV_32F);
-//        for(int i = 0; i < mN; i++){
-//            mat.at<float>(i,0) = mvPtPyr2[i].x;
-//            mat.at<float>(i,1) = mvPtPyr2[i].y;
-//        }
-
-//        // Undistort points
-//        mat = mat.reshape(2);
-//        cv::undistortPoints(mat, mat, mpMatcher->mK, mpMatcher->mDistCoef, cv::Mat(), mpMatcher->mK);
-//        mat = mat.reshape(1);
-
-//        // Fill undistorted keypoint vector
-//        mvPtPyr2Un.resize(mN);
-//        for (size_t i = 0; i < mN; i++) {
-//            cv::Point2f pt = mvPtPyr2[i];
-//            pt.x = mat.at<float>(i,0);
-//            pt.y = mat.at<float>(i,1);
-//            mvPtPyr2Un[i] = pt;
-//        }
-//    }
-//};
 
 void PatchMatch::DistortPoints(){
     if (mpMatcher->mDistCoef.at<float>(0) == 0.0)
@@ -604,7 +394,6 @@ void PatchMatch::DistortPoints(){
         mvPtPyr2.resize(mN);
         DistortVecPoints(mvPtPyr2Un, mvPtPyr2, mpMatcher->mK, mpMatcher->mDistCoef);
     }
-
 }
 
 /**

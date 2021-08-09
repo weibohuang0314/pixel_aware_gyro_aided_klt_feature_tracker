@@ -37,7 +37,6 @@ if(NOT OpenCV_FOUND)
 endif()
 
 find_package(Eigen3 3.1.0 REQUIRED)
-find_package(Pangolin REQUIRED)
 
 include_directories(
    ${PROJECT_SOURCE_DIR}
@@ -52,20 +51,26 @@ ${PROJECT_SOURCE_DIR}/Thirdparty/glog/lib/libglog.so
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 add_library(${PROJECT_NAME} SHARED
-    src/frame.h
+    include/frame.h
     src/frame.cpp
-    src/imu_types.h
+    include/imu_types.h
     src/imu_types.cpp
-    src/patch_match.h
+    include/patch_match.h
     src/patch_match.cpp
-    src/gyro_predict_matcher.h
-    src/gyro_predict_matcher.cpp
-    src/utils.h
+    include/gyro_aided_tracker.h
+    src/gyro_aided_tracker.cpp
+    include/utils.h
     src/utils.cpp
 
-    src/ORBDetectAndDespMatcher.h
+    include/ORBDetectAndDespMatcher.h
     src/ORBDetectAndDespMatcher.cpp
-    src/ORBextractor.h
+    include/ORBextractor.h
     src/ORBextractor.cc
 )
 
+# Build examples
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Demo)
+
+add_executable(RealSenseD435i
+Examples/Demo/RealSenseD435i.cpp)
+target_link_libraries(RealSenseD435i ${PROJECT_NAME} ${LINK_LIBS})

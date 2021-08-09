@@ -22,11 +22,13 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/opencv.hpp>
 
+//#include "Thirdparty/glog/include/glog/logging.h"
+#include "glog/logging.h"
+
 #include "frame.h"
-#include "gyro_predict_matcher.h"
+#include "gyro_aided_tracker.h"
 #include "ORBDetectAndDespMatcher.h"
 #include "ORBextractor.h"
-#include "Thirdparty/glog/include/glog/logging.h"
 
 #include "common.h"
 
@@ -43,9 +45,7 @@ double time_prev = 0;
 bool data_valid = true;
 
 cv::Mat image_cur, image_cur_distort;
-Frame lastLastFrame;
-Frame lastFrame;
-Frame curFrame;
+Frame curFrame, lastFrame;
 Frame curFrameWithoutGeometryValid;  // used to display temporal tracked featrues
 vector<IMU::Point> vImuMeas;        // IMU measurements from previous image to current image
 
@@ -54,7 +54,7 @@ std::string saveFolderPath;
 bool step_mode = false;
 bool do_rectify = true;
 
-bool test_orb_feature = false;
+bool test_orb_detect_and_desp_matcher = false;
 ORB_SLAM2::ORBextractor *pORBextractorLeft, *pORBextractorRight;
 
 std::vector<std::pair<double, std::string>> vpTimeCorrespondens;
@@ -117,8 +117,7 @@ void sensorProcessTimer(const ros::TimerEvent& event)
             image_buf.pop();
 
             if(do_rectify){
-                // camera_params.ResetDistCoef();
-                cv::remap(image_cur_distort, image_cur, camera_params.M1, camera_params.M2, cv::INTER_LINEAR);
+                cv::remap(image_cur_distort, image_cur, pCameraParams->M1, pCameraParams->M2, cv::INTER_LINEAR);
 
                 /*// save rectified images
                 std::string::size_type pos = rosbag_file.rfind(".bag");
@@ -137,6 +136,8 @@ void sensorProcessTimer(const ros::TimerEvent& event)
                 // end save rectified images
                 */
             }
+            else
+                image_cur = image_cur_distort.clone();
         }
 
         // Load imu measurements
@@ -186,13 +187,13 @@ void sensorProcessTimer(const ros::TimerEvent& event)
         }
     }
 
-    // processing measurements
+    // Feature tracking
     if (data_valid)
     {
-        curFrame = Frame(time_cur, image_cur, image_cur_distort, &lastFrame, &camera_params, vImuMeas, keypoint_number, threshold_of_predict_new_keypoint);
+        curFrame = Frame(time_cur, image_cur, image_cur_distort, &lastFrame, pCameraParams, pORBextractorLeft, vImuMeas, keypoint_number, threshold_of_predict_new_keypoint);
         if(lastFrame.mGray.empty()){    // if lastFrame is empty, then detect keypoints
-            if(!loadDetectedKeypoints){ // Default: detect keypoints using cv::goodFeaturesToTrack
-                curFrame.DetectKeyPoints();   // Default
+            if(!loadDetectedKeypoints){ // Default: detect keypoints using ORBextractor
+                curFrame.DetectKeyPoints(pORBextractorLeft);
             }else{  // else: load keypoints from file. Default: not execute
                 int idx = findTimeCorrespondenIndex(vpTimeCorrespondens, curFrame.mTimeStamp);
                 if (idx < 0){
@@ -212,10 +213,11 @@ void sensorProcessTimer(const ros::TimerEvent& event)
             Timer timer;
             cv::Point3f biasg(0,0,0);
 
-            /// ours
+            /// Pixel-Aware Gyro-Aided KLT Feature Tracking
             GyroAidedTracker gyroPredictMatcher(lastFrame, curFrame, imuCalib, biasg, cv::Mat(),
-                                                  GyroAidedTracker::GYRO_PREDICT_WITH_OPTICAL_FLOW_REFINED_CONSIDER_ILLUMINATION_DEFORMATION,
-                                                  saveFolderPath, half_patch_size, 1);
+                                                GyroAidedTracker::GYRO_PREDICT_WITH_OPTICAL_FLOW_REFINED_CONSIDER_ILLUMINATION_DEFORMATION,
+                                                GyroAidedTracker::PIXEL_AWARE_PREDICTION,
+                                                saveFolderPath, half_patch_size);
 
             double t_instant_construct = timer.runTime_s(); timer.freshTimer();
 
@@ -225,19 +227,21 @@ void sensorProcessTimer(const ros::TimerEvent& event)
             gyroPredictMatcher.SetBackToFrame(curFrame);
             double t_track_features = timer.runTime_s(); timer.freshTimer();
 
-            if(!loadDetectedKeypoints){ // Default: detcet keypoint using cv::goodFeaturesToTrack
-                curFrame.DetectKeyPoints();
+            if(!loadDetectedKeypoints){ // Default: detcet new keypoint ORBextractorLeft
+                curFrame.DetectKeyPoints(pORBextractorLeft);
                 double t_detect_features = timer.runTime_s(); timer.freshTimer();
+
                 int drawFlowType = 0;   // 0: draw flows on the current frame; 1: draw match line across two frames
                 bool bDrawPatch = true, bDrawMistracks = true, bDrawGyroPredictPosition = true;
-                curFrame.Display("Gyro-Aided KLT Feature Tracking", drawFlowType, bDrawPatch, bDrawMistracks, bDrawGyroPredictPosition);
+                curFrame.Display("Pixel-Aware Gyro-Aided KLT Feature Tracking", drawFlowType, bDrawPatch, bDrawMistracks, bDrawGyroPredictPosition);
 
             }else{// else load keypoints from file. Default: not execute
                 double t_detect_features = timer.runTime_s(); timer.freshTimer();
                 curFrame.SetPredictKeyPointsAndMask();
+
                 int drawFlowType = 0;   // 0: draw flows on the current frame; 1: draw match line across two frames
                 bool bDrawPatch = false, bDrawMistracks = true, bDrawGyroPredictPosition = false;
-                curFrame.Display("Gyro-Aided KLT Feature Tracking", drawFlowType, bDrawPatch, bDrawMistracks, bDrawGyroPredictPosition);
+                curFrame.Display("Pixel-Aware Gyro-Aided KLT Feature Tracking", drawFlowType, bDrawPatch, bDrawMistracks, bDrawGyroPredictPosition);
 
                 int idx = findTimeCorrespondenIndex(vpTimeCorrespondens, curFrame.mTimeStamp);
                 std::string path = detectedKeypointsFile + "/" + vpTimeCorrespondens[idx].second + ".txt";
@@ -245,29 +249,25 @@ void sensorProcessTimer(const ros::TimerEvent& event)
                 curFrame.LoadDetectedKeypointFromFile(path);
             }
 
-
             // test ORB feature detect and match for comparison
-            if(test_orb_feature)
+            if(test_orb_detect_and_desp_matcher)
             {
                 ORBDetectAndDespMatcher matcher(lastFrame, curFrame, pORBextractorLeft, pORBextractorRight, saveFolderPath);
                 matcher.FindFeatureMatches();
                 matcher.PoseEstimation2d2d();
                 matcher.Display();
             }
-
         }
 
         // update states
         {
-            lastLastFrame = Frame(lastFrame);
             lastFrame = Frame(curFrame);
             time_prev = time_cur;
             vImuMeas.clear();
+            data_valid = false;
         }
 
-        data_valid = false;
-    } // End processing measurements
-
+    } // End feature tracking
 }
 
 
@@ -328,8 +328,8 @@ int main(int argc, char **argv)
     saveFolderPath = path + output_file;
     std::cout << "saveFolderPath: " << saveFolderPath << std::endl;
 
-    // Load time correspondences
-    if(loadDetectedKeypoints){
+    detectedKeypointsFile = path + detectedKeypointsFile;
+    if(loadDetectedKeypoints){ // if Load keypoints from file. Default: not execute
         std::string path = detectedKeypointsFile + "/corresponds.txt";
         std::ifstream fin(path.c_str());
         if(!fin.is_open()){
@@ -346,13 +346,13 @@ int main(int argc, char **argv)
     }
 
     // initial ORBextractor
-    if(test_orb_feature){
-        int nFeatures = keypoint_number;
-        float fScaleFactor = 1.2;
-        int nLevels = 8;
-        int fIniThFAST = 20;
-        int fMinThFAST = 7;
-        pORBextractorLeft = new ORB_SLAM2::ORBextractor(nFeatures,fScaleFactor,nLevels,fIniThFAST,fMinThFAST);
+    int nFeatures = keypoint_number;
+    float fScaleFactor = 1.2;
+    int nLevels = 1;    // 8
+    int fIniThFAST = 20;
+    int fMinThFAST = 7;
+    pORBextractorLeft = new ORB_SLAM2::ORBextractor(nFeatures,fScaleFactor,nLevels,fIniThFAST,fMinThFAST);
+    if(test_orb_detect_and_desp_matcher){
         pORBextractorRight = new ORB_SLAM2::ORBextractor(nFeatures,fScaleFactor,nLevels,fIniThFAST,fMinThFAST);
     }
 

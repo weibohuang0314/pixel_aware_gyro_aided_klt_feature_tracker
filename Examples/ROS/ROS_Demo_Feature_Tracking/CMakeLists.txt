@@ -39,7 +39,6 @@ endif()
 
 find_package(rosbag REQUIRED )
 find_package(Eigen3 3.1.0 REQUIRED)
-find_package(Pangolin REQUIRED)
 
 include_directories(
 ${rosbag_INCLUDE_DIRS}
@@ -62,7 +61,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 
 # feature_tracker
 rosbuild_add_executable(feature_tracker
-include/common.h
+#include/common.h
 src/feature_tracker.cpp )
 
 target_link_libraries(feature_tracker

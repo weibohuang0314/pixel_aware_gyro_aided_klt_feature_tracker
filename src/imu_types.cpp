@@ -27,12 +27,9 @@ const float eps = 1e-4;
 
 cv::Mat NormalizeRotation(const cv::Mat &R)
 {
-//    std::cout << "NormalizeRotation R: " << R << std::endl;
     cv::Mat U,w,Vt;
     cv::SVDecomp(R,w,U,Vt,cv::SVD::FULL_UV);
-    // assert(cv::determinant(U*Vt)>0);
 
-//    std::cout << "U*Vt: " << U*Vt << std::endl;
     return U*Vt;
 }
 
@@ -253,65 +250,6 @@ void Preintegrated::Reintegrate()
         IntegrateNewMeasurement(aux[i].a,aux[i].w,aux[i].t);
 }
 
-/* // origin:
-void Preintegrated::IntegrateNewMeasurement(const cv::Point3f &acceleration, const cv::Point3f &angVel, const float &dt)
-{
-    mvMeasurements.push_back(integrable(acceleration,angVel,dt));
-
-    // Position is updated firstly, as it depends on previously computed velocity and rotation.
-    // Velocity is updated secondly, as it depends on previously computed rotation.
-    // Rotation is the last to be updated.
-
-    //Matrices to compute covariance
-    cv::Mat A = cv::Mat::eye(9,9,CV_32F);
-    cv::Mat B = cv::Mat::zeros(9,6,CV_32F);
-
-    cv::Mat acc = (cv::Mat_<float>(3,1) << acceleration.x-b.bax,acceleration.y-b.bay, acceleration.z-b.baz);
-    cv::Mat gyroW = (cv::Mat_<float>(3,1) << angVel.x-b.bwx, angVel.y-b.bwy, angVel.z-b.bwz);
-
-    avgA = (dT*avgA + dR*acc*dt)/(dT+dt);
-    avgW = (dT*avgW + gyroW*dt)/(dT+dt);
-
-    // Update delta position dP and velocity dV (rely on no-updated delta rotation)
-    dP = dP + dV*dt + 0.5f*dR*acc*dt*dt;
-    dV = dV + dR*acc*dt;
-
-    // Compute velocity and position parts of matrices A and B (rely on non-updated delta rotation)
-    cv::Mat accHat = (cv::Mat_<float>(3,3) << 0, -acc.at<float>(2), acc.at<float>(1),
-                                                   acc.at<float>(2), 0, -acc.at<float>(0),
-                                                   -acc.at<float>(1), acc.at<float>(0), 0);
-    A.rowRange(3,6).colRange(0,3) = -dR*dt*accHat;
-    A.rowRange(6,9).colRange(0,3) = -0.5f*dR*dt*dt*accHat;
-    A.rowRange(6,9).colRange(3,6) = cv::Mat::eye(3,3,CV_32F)*dt;
-    B.rowRange(3,6).colRange(3,6) = dR*dt;
-    B.rowRange(6,9).colRange(3,6) = 0.5f*dR*dt*dt;
-
-    // Update position and velocity jacobians wrt bias correction
-    JPa = JPa + JVa*dt -0.5f*dR*dt*dt;
-    JPg = JPg + JVg*dt -0.5f*dR*dt*dt*accHat*JRg;
-    JVa = JVa - dR*dt;
-    JVg = JVg - dR*dt*accHat*JRg;
-
-    // Update delta rotation
-    IntegratedRotation dRi(angVel,b,dt);
-    dR = NormalizeRotation(dR*dRi.deltaR);
-
-    // Compute rotation parts of matrices A and B
-    A.rowRange(0,3).colRange(0,3) = dRi.deltaR.t();
-    B.rowRange(0,3).colRange(0,3) = dRi.rightJ*dt;
-
-    // Update covariance
-    C.rowRange(0,9).colRange(0,9) = A*C.rowRange(0,9).colRange(0,9)*A.t() + B*Nga*B.t();
-    C.rowRange(9,15).colRange(9,15) = C.rowRange(9,15).colRange(9,15) + NgaWalk;
-
-    // Update rotation jacobian wrt bias correction
-    JRg = dRi.deltaR.t()*JRg - dRi.rightJ*dt;
-
-    // Total integrated time
-    dT += dt;
-}
-*/
-
 void Preintegrated::IntegrateNewMeasurement(const cv::Point3f &acceleration, const cv::Point3f &angVel, const float &dt)
 {
     mvMeasurements.push_back(integrable(acceleration,angVel,dt));
@@ -389,7 +327,6 @@ void Preintegrated::MergePrevious(Preintegrated* pPrev)
         IntegrateNewMeasurement(aux1[i].a,aux1[i].w,aux1[i].t);
     for(size_t i=0;i<aux2.size();i++)
         IntegrateNewMeasurement(aux2[i].a,aux2[i].w,aux2[i].t);
-
 }
 
 void Preintegrated::SetNewBias(const Bias &bu_)

@@ -22,28 +22,15 @@ ORBDetectAndDespMatcher::ORBDetectAndDespMatcher(const Frame& pFrameRef, const F
 void ORBDetectAndDespMatcher::ExtractORB(int flag, const cv::Mat& im)
 {
     if(flag == 0){
-        cv::Mat mat_tmp;
-        (*mpORBextractorLeft)(im, mat_tmp, mvKeyPointsRef, mDescriptorRef);
+        cv::Mat mask;
+        (*mpORBextractorLeft)(im, mask, mvKeyPointsRef, mDescriptorRef);
     }else {
-        cv::Mat mat_tmp;
-        (*mpORBextractorRight)(im, mat_tmp, mvKeyPointsCur, mDescriptorCur);
+        cv::Mat mask;
+        (*mpORBextractorRight)(im, mask, mvKeyPointsCur, mDescriptorCur);
     }
 }
 
 void ORBDetectAndDespMatcher::FindFeatureMatches(){
-    /*// Step 0: initialize
-    cv::Ptr<cv::FeatureDetector> detector = cv::ORB::create();          // others: BRISK, FREAK
-    cv::Ptr<cv::DescriptorExtractor> descriptor = cv::ORB::create();    //
-
-    // Step 1: detect Oriented FAST corner
-    detector->detect(mImgGrayRef, mvKeyPointsRef);
-    detector->detect(mImgGrayCur, mvKeyPointsCur);
-
-    // Step 2: compute BRIEF descriptor
-    descriptor->compute(mImgGrayRef, mvKeyPointsRef, mDescriptorRef);
-    descriptor->compute(mImgGrayCur, mvKeyPointsCur, mDescriptorCur);
-    */
-
     std::thread threadLeft(&ORBDetectAndDespMatcher::ExtractORB, this, 0, mImgGrayRef);
     std::thread threadRight(&ORBDetectAndDespMatcher::ExtractORB, this, 1, mImgGrayCur);
     threadLeft.join();

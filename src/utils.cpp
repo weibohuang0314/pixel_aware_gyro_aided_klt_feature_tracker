@@ -1,14 +1,14 @@
 #include "utils.h"
 
-void DistortOnePoint(cv::Point2f& pt, cv::Point2f& pt_dist, cv::Mat& mK, cv::Mat& mDistCoef)
+void DistortOnePoint(cv::Point2f& pt, cv::Point2f& pt_dist, cv::Mat& K, cv::Mat& DistCoef)
 {
-    float mfx = mK.at<float>(0,0); float mfy = mK.at<float>(1,1);
-    float mcx = mK.at<float>(0,2); float mcy = mK.at<float>(1,2);
+    float mfx = K.at<float>(0,0); float mfy = K.at<float>(1,1);
+    float mcx = K.at<float>(0,2); float mcy = K.at<float>(1,2);
     float mfx_inv = 1.0 / mfx; float mfy_inv = 1.0 / mfy;
 
-    float mk1 = mDistCoef.at<float>(0); float mk2 = mDistCoef.at<float>(1);
-    float mp1 = mDistCoef.at<float>(2); float mp2 = mDistCoef.at<float>(3);
-    float mk3 = mDistCoef.total() == 5? mDistCoef.at<float>(4): 0;
+    float K1 = DistCoef.at<float>(0); float K2 = DistCoef.at<float>(1);
+    float mp1 = DistCoef.at<float>(2); float mp2 = DistCoef.at<float>(3);
+    float K3 = DistCoef.total() == 5? DistCoef.at<float>(4): 0;
 
     float x = (pt.x - mcx) * mfx_inv;
     float y = (pt.y - mcy) * mfy_inv;
@@ -16,23 +16,23 @@ void DistortOnePoint(cv::Point2f& pt, cv::Point2f& pt_dist, cv::Mat& mK, cv::Mat
     float r2 = x * x + y * y;
     float r4 = r2 * r2;
     float r6 = r4 * r2;
-    float x_distort = x * (1 + mk1 * r2 + mk2 * r4 + mk3 * r6) + 2 * mp1 * x * y + mp2 * (r2 + 2 * x * x);
-    float y_distort = y * (1 + mk1 * r2 + mk2 * r4 + mk3 * r6) + mp1 * (r2 + 2 * y * y) + 2 * mp2 * x * y;
+    float x_distort = x * (1 + K1 * r2 + K2 * r4 + K3 * r6) + 2 * mp1 * x * y + mp2 * (r2 + 2 * x * x);
+    float y_distort = y * (1 + K1 * r2 + K2 * r4 + K3 * r6) + mp1 * (r2 + 2 * y * y) + 2 * mp2 * x * y;
     float u_distort = mfx * x_distort + mcx;
     float v_distort = mfy * y_distort + mcy;
 
     pt_dist = cv::Point2f(u_distort, v_distort); // Distorted
 }
 
-void DistortVecPoints(std::vector<cv::Point2f>& vpts, std::vector<cv::Point2f>& vpts_dist, cv::Mat& mK, cv::Mat& mDistCoef)
+void DistortVecPoints(std::vector<cv::Point2f>& vpts, std::vector<cv::Point2f>& vpts_dist, cv::Mat& K, cv::Mat& DistCoef)
 {
-    float mfx = mK.at<float>(0,0); float mfy = mK.at<float>(1,1);
-    float mcx = mK.at<float>(0,2); float mcy = mK.at<float>(1,2);
+    float mfx = K.at<float>(0,0); float mfy = K.at<float>(1,1);
+    float mcx = K.at<float>(0,2); float mcy = K.at<float>(1,2);
     float mfx_inv = 1.0 / mfx; float mfy_inv = 1.0 / mfy;
 
-    float mk1 = mDistCoef.at<float>(0); float mk2 = mDistCoef.at<float>(1);
-    float mp1 = mDistCoef.at<float>(2); float mp2 = mDistCoef.at<float>(3);
-    float mk3 = mDistCoef.total() == 5? mDistCoef.at<float>(4): 0;
+    float K1 = DistCoef.at<float>(0); float K2 = DistCoef.at<float>(1);
+    float mp1 = DistCoef.at<float>(2); float mp2 = DistCoef.at<float>(3);
+    float K3 = DistCoef.total() == 5? DistCoef.at<float>(4): 0;
 
     vpts_dist.resize(vpts.size());
     for(size_t i = 0, iend = vpts.size(); i<iend; i++){
@@ -44,8 +44,8 @@ void DistortVecPoints(std::vector<cv::Point2f>& vpts, std::vector<cv::Point2f>& 
         float r2 = x * x + y * y;
         float r4 = r2 * r2;
         float r6 = r4 * r2;
-        float x_distort = x * (1 + mk1 * r2 + mk2 * r4 + mk3 * r6) + 2 * mp1 * x * y + mp2 * (r2 + 2 * x * x);
-        float y_distort = y * (1 + mk1 * r2 + mk2 * r4 + mk3 * r6) + mp1 * (r2 + 2 * y * y) + 2 * mp2 * x * y;
+        float x_distort = x * (1 + K1 * r2 + K2 * r4 + K3 * r6) + 2 * mp1 * x * y + mp2 * (r2 + 2 * x * x);
+        float y_distort = y * (1 + K1 * r2 + K2 * r4 + K3 * r6) + mp1 * (r2 + 2 * y * y) + 2 * mp2 * x * y;
         float u_distort = mfx * x_distort + mcx;
         float v_distort = mfy * y_distort + mcy;
 
@@ -53,6 +53,23 @@ void DistortVecPoints(std::vector<cv::Point2f>& vpts, std::vector<cv::Point2f>& 
     }
 }
 
+void UndistortVecPoints(std::vector<cv::Point2f>& vpts_dist, std::vector<cv::Point2f>& vpts_undist, cv::Mat& K, cv::Mat& DistCoef)
+{
+    int N = vpts_dist.size();
+    cv::Mat mat(N, 2, CV_32F);
+    for(int i = 0; i < N; i++){
+        mat.at<float>(i,0) = vpts_dist[i].x;
+        mat.at<float>(i,1) = vpts_dist[i].y;
+    }
+    mat = mat.reshape(2);
+    cv::undistortPoints(mat, mat, K, DistCoef, cv::Mat(), K);
+    mat = mat.reshape(1);
+
+    vpts_undist.resize(N);
+    for(size_t i = 0; i < N; i++){
+        vpts_undist[i] = cv::Point2f(mat.at<float>(i,0), mat.at<float>(i,1));
+    }
+}
 
 /**
  * Zero-Normalized cross correlation
