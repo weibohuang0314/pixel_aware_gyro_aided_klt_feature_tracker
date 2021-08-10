@@ -32,7 +32,8 @@
 *.app
 
 
-
+build.sh
+build_ros.sh
 build/
 bin/
 lib/

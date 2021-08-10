@@ -28,8 +28,8 @@
 #include <utility>
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
-#include <Eigen/Geometry>
-#include <Eigen/Dense>
+#include <eigen3/Eigen/Geometry>
+#include <eigen3/Eigen/Dense>
 
 class CameraParams{
 public:
