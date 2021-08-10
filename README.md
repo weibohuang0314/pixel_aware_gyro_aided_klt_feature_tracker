@@ -8,7 +8,7 @@ Pixel-Aware Gyro-aided KLT Feature Tracker is a feature tracker that remains acc
 In this repository, we provide examples to run the feature tracker in the self-collected sequences named [PKUSZ_RealSenseD435i_sequence](https://drive.google.com/drive/folders/1oBaiijQvzDb9SezgaVPm1ABosvTcztJ7?usp=sharing), which was recorded by a hand-held [RealSense-D435i](https://www.intelrealsense.com/depth-camera-d435i/) camera. We also provide a ROS node to process live feature tracking in the V3_01_difficult sequence of the [EuRoC dataset](http://projects.asl.ethz.ch/datasets/doku.php?id=kmavvisualinertialdatasets). **The library can be compiled without ROS.** The frame keypoints can be real-time detected by a modified [ORBextractor](https://github.com/raulmur/ORB_SLAM2/blob/master/src/ORBextractor.cc) that used in [ORB_SLAM2](https://github.com/raulmur/ORB_SLAM2) system, or load from files that detected by other methods like [SuperPoint](https://github.com/magicleap/SuperPointPretrainedNetwork). The user can set the **LoadDetectedKeypoints** parameter in **.yaml** to choose keypoint generation mode.
 
 #1. License
-pixel_aware_gyro_aided_klt_feature_tracker is released under a [GPLv3 license](https://gitee.com/weibohuang/pixel_aware_gyro_aided_klt_feature_tracker/blob/master/LICENSE).
+pixel_aware_gyro_aided_klt_feature_tracker is released under a [GPLv3 license - gitee](https://gitee.com/weibohuang/pixel_aware_gyro_aided_klt_feature_tracker/blob/master/LICENSE) or [GPLv3 license - github](https://github.com/weibohuang0314/pixel_aware_gyro_aided_klt_feature_tracker/blob/master/LICENSE).
 
 If you use our method in an academic work, please cite:
 ```
@@ -28,7 +28,7 @@ We use [OpenCV](http://opencv.org) to manipulate images and features. Dowload an
 Download and install instructions can be found at: http://eigen.tuxfamily.org. **Required at least 3.1.0**.
 
 ## glog
-The glog source code is provided in /Thirdparty/glog-master/.
+The glog source code is provided in /Thirdparty/glog-master/. See following Section 3 for installation.
 
 ## ROS (optional)
 We provide some examples to process the live input or read from rosbag files using [ROS](ros.org). Building these examples is optional. In case you want to use ROS, a version Hydro or newer is needed. Tested on **melodic**.
@@ -36,6 +36,10 @@ We provide some examples to process the live input or read from rosbag files usi
 #3. Building library and Demo examples
 
 Clone the repository:
+```
+git clone https://github.com/weibohuang0314/pixel_aware_gyro_aided_klt_feature_tracker.git
+```
+For the user from China Mainland, you can clone the repository from gitee:
 ```
 git clone https://gitee.com/weibohuang/pixel_aware_gyro_aided_klt_feature_tracker.git
 ```
@@ -47,17 +51,18 @@ chmod +x build.sh
 ./build.sh
 ```
 
-#4. Demo examples
+#4. Running Demo examples (RealSenseD435i)
 1. `cd Examples/Demo/`
-2. Uncompress `data/PKUSZ_RealSenseD435i_sequence/sequence_1.zip` into `data/PKUSZ_RealSenseD435i_sequence/` folder.
+2. Uncompress `data/PKUSZ_RealSenseD435i_sequence/sequence_1.zip` into `data/PKUSZ_RealSenseD435i_sequence/` folder. The other sequences can be downloaded from [Google Share](https://drive.google.com/drive/folders/1oBaiijQvzDb9SezgaVPm1ABosvTcztJ7?usp=sharing) or [BaiduNetDisk](https://pan.baidu.com/s/1f3RIVcMniJs0Z0apdtYRtw) (code: qjd2) for users from China Mainland.
    
 3. Execute the following command.
 ```
 ./RealSenseD435i RealSenseD435i.yaml
 ```
-The keypoints are automatically detected using the `ORBextractor`.
 
-4. If you want to load keypoints from file, we give an example. Execute the following command. Uncompress `data/PKUSZ_RealSenseD435i_sequence/SuperPoints.zip` into `data/PKUSZ_RealSenseD435i_sequence/` folder. In the `RealSenseD435i.yaml` file, change `LoadDetectedKeypoints` to `1` and set `DetectedKeypointsFile` to `"/data/PKUSZ_RealSenseD435i_sequence/SuperPoints/sequence_1"`. Rerun `./RealSenseD435i RealSenseD435i.yaml` in the terminal.
+4. By default, the keypoints are automatically detected using the `ORBextractor`. 
+   
+   If you want to load keypoints from file, we give an example as follows. First, uncompress `data/PKUSZ_RealSenseD435i_sequence/SuperPoints.zip` into `data/PKUSZ_RealSenseD435i_sequence/` folder. Second, in the `RealSenseD435i.yaml` file, change `LoadDetectedKeypoints` to `1` and set `DetectedKeypointsFile` to `"/data/PKUSZ_RealSenseD435i_sequence/SuperPoints/sequence_1"`. Third, run `./RealSenseD435i RealSenseD435i.yaml` in the terminal.
 
 #5. ROS Examples
 
@@ -78,4 +83,5 @@ chmod +x build_ros.sh
 ```
 roslaunch ROS_Demo_Feature_Tracking EuRoC.launch
 ```
-2. Check the configuration file `EuRoC.yaml`. If the parameter `readFromRosBag` is `0`, you need to play the rosbag using ```rosbag play sequence.bag```; else if the parameter is `1`, you need to set the `rosBag` argument in the `EuRoC.launch` file.
+2. Check the configuration file `EuRoC.yaml`. If the parameter `readFromRosBag` is `0`, you need to play the rosbag file using ```rosbag play sequence.bag```; else if the parameter is `1`, you need to set the `rosBag` argument in the `EuRoC.launch` file.
+3. By default, the keypoints are automatically detected using the `ORBextractor`. You can also load keypoints from file, as mentioned in Section 4.4.
