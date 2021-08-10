@@ -8,7 +8,7 @@ Pixel-Aware Gyro-aided KLT Feature Tracker is a feature tracker that remains acc
 In this repository, we provide examples to run the feature tracker in the self-collected sequences named [PKUSZ_RealSenseD435i_sequence](https://drive.google.com/drive/folders/1oBaiijQvzDb9SezgaVPm1ABosvTcztJ7?usp=sharing), which was recorded by a hand-held [RealSense-D435i](https://www.intelrealsense.com/depth-camera-d435i/) camera. We also provide a ROS node to process live feature tracking in the V3_01_difficult sequence of the [EuRoC dataset](http://projects.asl.ethz.ch/datasets/doku.php?id=kmavvisualinertialdatasets). **The library can be compiled without ROS.** The frame keypoints can be real-time detected by a modified [ORBextractor](https://github.com/raulmur/ORB_SLAM2/blob/master/src/ORBextractor.cc) that used in [ORB_SLAM2](https://github.com/raulmur/ORB_SLAM2) system, or load from files that detected by other methods like [SuperPoint](https://github.com/magicleap/SuperPointPretrainedNetwork). The user can set the **LoadDetectedKeypoints** parameter in **.yaml** to choose keypoint generation mode.
 
 #1. License
-ORB-SLAM2 is released under a [GPLv3 license](https://gitee.com/weibohuang/pixel_aware_gyro_aided_klt_feature_tracker/blob/master/LICENSE).
+pixel_aware_gyro_aided_klt_feature_tracker is released under a [GPLv3 license](https://gitee.com/weibohuang/pixel_aware_gyro_aided_klt_feature_tracker/blob/master/LICENSE).
 
 If you use our method in an academic work, please cite:
 ```
