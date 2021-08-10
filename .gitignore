@@ -36,7 +36,8 @@
 build/
 bin/
 lib/
-Thirdparty/glog/
+#Thirdparty/glog/
+#Thirdparty/glog-master/
 CMakeLists.txt.user
 
 Examples/Demo/output/

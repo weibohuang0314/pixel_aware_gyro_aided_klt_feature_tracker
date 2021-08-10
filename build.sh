@@ -11,7 +11,10 @@ echo "mydir : $_mydir"
 
 echo "Configuring and building glog ..."
 cd Thirdparty
-rm -f -r glog/
+#rm -f -r glog/
+#cd glog-master
+xz -d glog-master.tar.xz
+tar -xvf glog-master.tar
 cd glog-master
 ./autogen.sh
 ./configure --prefix=$_mydir/Thirdparty/glog
