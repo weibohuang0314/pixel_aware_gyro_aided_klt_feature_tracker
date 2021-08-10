@@ -9,17 +9,17 @@ _mydir="$(dirname $_script)"
 echo "mydir : $_mydir"
 
 
-#echo "Configuring and building glog ..."
-#cd Thirdparty
-##rm -f -r glog/
-##cd glog-master
-#xz -d glog-master.tar.xz
-#tar -xvf glog-master.tar
+echo "Configuring and building glog ..."
+cd Thirdparty
+#rm -f -r glog/
 #cd glog-master
-#./autogen.sh
-#./configure --prefix=$_mydir/Thirdparty/glog
-#make
-#make install
+xz -d glog-master.tar.xz
+tar -xvf glog-master.tar
+cd glog-master
+./autogen.sh
+./configure --prefix=$_mydir/Thirdparty/glog
+make
+make install
 
 
 echo "Configuring and building pixel_aware_gyro_aided_klt_feature_tracker ..."
