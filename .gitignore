@@ -36,6 +36,7 @@
 build/
 bin/
 lib/
+Thirdparty/
 Thirdparty/glog/
 Thirdparty/glog-master/
 CMakeLists.txt.user
