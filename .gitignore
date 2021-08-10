@@ -36,6 +36,7 @@
 build/
 bin/
 lib/
+Thirdparty/glog-master.tar.xz
 Thirdparty/glog-master.tar
 Thirdparty/glog/
 Thirdparty/glog-master/
