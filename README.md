@@ -55,7 +55,7 @@ chmod +x build.sh
 
 # 4 . Running Demo examples (RealSenseD435i)
 1. `cd Examples/Demo/`
-2. Uncompress `data/PKUSZ_RealSenseD435i_sequence/sequence_1.zip` into `data/PKUSZ_RealSenseD435i_sequence/` folder. The other sequences can be downloaded from [Google Share](https://drive.google.com/drive/folders/1oBaiijQvzDb9SezgaVPm1ABosvTcztJ7?usp=sharing) or [BaiduNetDisk](https://pan.baidu.com/s/1f3RIVcMniJs0Z0apdtYRtw) (code: qjd2) for users from China Mainland.
+2. Uncompress `data/PKUSZ_RealSenseD435i_sequence/sequence_1.zip` into `data/PKUSZ_RealSenseD435i_sequence/` folder. The other sequences of PKUSZ_RealSenseD435i dataset can be downloaded from [Google Share](https://drive.google.com/drive/folders/1oBaiijQvzDb9SezgaVPm1ABosvTcztJ7?usp=sharing) or [BaiduNetDisk](https://pan.baidu.com/s/1f3RIVcMniJs0Z0apdtYRtw) (code: qjd2) for users from China Mainland.
    
 3. Execute the following command.
 ```
