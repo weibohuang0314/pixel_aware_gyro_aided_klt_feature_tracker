@@ -6,7 +6,7 @@
 imuTopic: "/camera0/imu"
 leftImageTopic: "/camera0/fisheye1/image_raw" #"/camera/color/image_raw"
 
-readFromRosBag: 1   # 1: read from rosbag; 0: subscribe from rosbag (you should 'rosbag play ...')
+readFromRosBag: 0   # 1: read from rosbag; 0: subscribe from rosbag (you should 'rosbag play ...')
 # note: 'rosBag' is configurated in launch file
 
 #--------------------------------------------------------------------------------------------

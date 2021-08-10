@@ -6,7 +6,7 @@
 imuTopic: "/desk_scene/imu0"
 leftImageTopic: "/desk_scene/cam0/image_raw" #"/camera/color/image_raw"
 
-readFromRosBag: 1   # 1: read from rosbag; 0: subscribe from rosbag (you should 'rosbag play ...')
+readFromRosBag: 0   # 1: read from rosbag; 0: subscribe from rosbag (you should 'rosbag play ...')
 # rosBag: ""
 
 #--------------------------------------------------------------------------------------------

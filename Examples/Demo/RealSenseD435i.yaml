@@ -15,7 +15,7 @@ HalfPatchSize: 5
 # You can load keypoints detected by other methods.
 # In this case, a corresponds.txt file should be provided to indicate the
 # correspondences between timestamp and filename
-LoadDetectedKeypoints: 1
+LoadDetectedKeypoints: 0
 DetectedKeypointsFile: "/data/PKUSZ_RealSenseD435i_sequence/SuperPoints/sequence_1"
 
 #--------------------------------------------------------------------------------------------

@@ -6,7 +6,7 @@
 imuTopic: "/imu0"
 leftImageTopic: "/cam0/image_raw" #"/camera/color/image_raw"
 
-readFromRosBag: 1   # 1: read from rosbag; 0: subscribe from rosbag (you should 'rosbag play ...')
+readFromRosBag: 0   # 1: read from rosbag; 0: subscribe from rosbag (you should 'rosbag play ...')
 # note: 'rosBag' is configurated in launch file
 
 #--------------------------------------------------------------------------------------------
@@ -21,7 +21,6 @@ HalfPatchSize: 5
 # In this case, a corresponds.txt file should be provided to indicate the
 # correspondences between timestamp and filename
 LoadDetectedKeypoints: 0
-#DetectedKeypointsFile: "/home/hri/rosbuild_ws/package_dir/pixel_aware_gyro_aided_klt_feature_tracker/Examples/ROS/ROS_Demo_Feature_Tracking/data/SuperGluePretrainedNetwork/detected_points/V1_03_difficult"
 DetectedKeypointsFile: "/../data/SuperPoints/V1_03_difficult"
 
 
