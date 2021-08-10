@@ -1,3 +1,25 @@
+/**
+* This file is part of pixel_aware_gyro_aided_klt_feature_tracker.
+*
+* Copyright (C) 2015-2022 Weibo Huang <weibohuang@pku.edu.cn> (Peking University)
+* For more information see <https://gitee.com/weibohuang/pixel_aware_gyro_aided_klt_feature_tracker>
+* or <https://github.com/weibohuang/pixel_aware_gyro_aided_klt_feature_tracker>
+*
+* pixel_aware_gyro_aided_klt_feature_tracker is a free software:
+* you can redistribute it and/or modify it under the terms of the GNU General
+* Public License as published by the Free Software Foundation, either version 3
+* of the License, or (at your option) any later version.
+*
+* pixel_aware_gyro_aided_klt_feature_tracker is distributed in the hope that
+* it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with pixel_aware_gyro_aided_klt_feature_tracker.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #ifndef GYROPREDICTIMUTYPES_H
 #define GYROPREDICTIMUTYPES_H
 
@@ -6,7 +28,6 @@
 #include <utility>
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
-//#include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <Eigen/Dense>
 
@@ -78,11 +99,6 @@ public:
              const double &timestamp): a(acc_x,acc_y,acc_z), w(ang_vel_x,ang_vel_y,ang_vel_z), t(timestamp){}
     Point(const cv::Point3f Acc, const cv::Point3f Gyro, const double &timestamp):
         a(Acc.x,Acc.y,Acc.z), w(Gyro.x,Gyro.y,Gyro.z), t(timestamp){}
-//    void operator=(const Point &imu){
-//        a = imu.a;
-//        w = imu.w;
-//        t = imu.t;
-//    }
 
 public:
     cv::Point3f a;
@@ -135,7 +151,7 @@ public:
     IntegratedRotation(const cv::Point3f &angVel, const Bias &imuBias, const float &time);
 
 public:
-    float deltaT; //integration time
+    float deltaT;   //integration time
     cv::Mat deltaR; //integrated rotation
     cv::Mat rightJ; // right jacobian
 };
@@ -199,7 +215,6 @@ private:
     };
 
     std::vector<integrable> mvMeasurements;
-
     std::mutex mMutex;
 };
 
@@ -215,7 +230,6 @@ cv::Mat InverseRightJacobianSO3(const float &x, const float &y, const float &z);
 cv::Mat InverseRightJacobianSO3(const cv::Mat &v);
 cv::Mat Skew(const cv::Mat &v);
 cv::Mat NormalizeRotation(const cv::Mat &R);
-
 
 } // namespace IMU
 

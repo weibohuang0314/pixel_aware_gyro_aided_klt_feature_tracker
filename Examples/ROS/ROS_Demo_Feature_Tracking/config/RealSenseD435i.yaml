@@ -4,7 +4,7 @@
 # ROS topics
 #--------------------------------------------------------------------------------------------
 imuTopic: "/camera0/imu"
-leftImageTopic: "/camera0/fisheye1/image_raw" #"/camera/color/image_raw"
+leftImageTopic: "/camera0/fisheye1/image_raw"
 
 readFromRosBag: 0   # 1: read from rosbag; 0: subscribe from rosbag (you should 'rosbag play ...')
 # note: 'rosBag' is configurated in launch file
@@ -12,7 +12,7 @@ readFromRosBag: 0   # 1: read from rosbag; 0: subscribe from rosbag (you should 
 #--------------------------------------------------------------------------------------------
 # Paramters!
 #--------------------------------------------------------------------------------------------
-downSampleRate: 2  # default: 1
+downSampleRate: 1  # default: 1
 KeyPointNumber: 500
 ThresholdOfPredictNewKeyPoint: 1.0
 HalfPatchSize: 5

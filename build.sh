@@ -21,8 +21,6 @@ echo "mydir : $_mydir"
 
 echo "Configuring and building pixel_aware_gyro_aided_klt_feature_tracker ..."
 cd $_mydir
-#rm -f -r lib/
-#rm -f -r build/
 mkdir build
 cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release

@@ -22,8 +22,7 @@ GyroAidedTracker::GyroAidedTracker(double t, double t_ref, const cv::Mat &imgGra
     mvImuFromLastFrame(vImuFromLastFrame), mBias(bias_),
     mK(K_), mDistCoef(DistCoef_), mWidth(imgGrayCur_.cols), mHeight(imgGrayCur_.rows),
     mNormalizeTable(normalizeTable_), mType(type_), mSaveFolderPath(saveFolderPath),
-    mHalfPatchSize(halfPatchSize_), //mPreditcMethod(predictMethod_),
-    mPredictMethod(predictMethod_)
+    mHalfPatchSize(halfPatchSize_), mPredictMethod(predictMethod_)
 {
     Initialize();
 }
@@ -41,7 +40,6 @@ GyroAidedTracker::GyroAidedTracker(const Frame& pFrameRef, const Frame& pFrameCu
     mvKeysRefUn(pFrameRef.mvKeysUn), mvKeysCurUn(pFrameCur.mvKeysUn),
     mvImuFromLastFrame(pFrameCur.mvImuFromLastFrame),
     mRbc(imuCalib.Tbc.colRange(0,3).rowRange(0,3)),
-    //    mpIMUCalib(pIMUCalib),
     mBias(biasg_),
     mK(pFrameCur.mpCameraParams->mK), mDistCoef(pFrameCur.mpCameraParams->mDistCoef), mWidth(pFrameCur.mpCameraParams->width), mHeight(pFrameCur.mpCameraParams->height),
     mNormalizeTable(normalizeTable_), mType(type_), mSaveFolderPath(saveFolderPath),
@@ -54,13 +52,12 @@ void GyroAidedTracker::Initialize()
 {
     // create folder
     if (mSaveFolderPath.size() > 0){    // if the folder path is set, then we save processing results
-        mSaveFolderPath = mSaveFolderPath + "/mType_" + std::to_string(mType) + "_mPredictMethod_" + std::to_string(mPredictMethod) + "/";
+        //mSaveFolderPath = mSaveFolderPath + "/mType_" + std::to_string(mType) + "_mPredictMethod_" + std::to_string(mPredictMethod) + "/";
         std::string command = "mkdir -p " + mSaveFolderPath;
         int a = system(command.c_str());
     }
 
-
-    mbNCC = true; //true;
+    mbNCC = true;
     mHalfPatchSize = mHalfPatchSize == 0? 5: mHalfPatchSize;
     mRadiusForFindNearNeighbor = 2 * mHalfPatchSize; //4.0f;
 
@@ -113,8 +110,6 @@ void GyroAidedTracker::SetBackToFrame(Frame &pFrame)
     pFrame.mRcl = mRcl.clone();
 }
 
-
-
 /**
  * @brief GyroAidedTracker::GyroPredictFeatures
  * @return The number of predicted features.
@@ -149,20 +144,8 @@ int GyroAidedTracker::GyroPredictFeatures()
             std::vector<cv::Point2f> vPtPredictCornesUn;
             std::vector<cv::Point2f> vecC;  // predicted corner - center point
 
-//            // Undistort the four corners of the patch window
-//            cv::Mat mat(mvPatchCorners.size(), 2, CV_32F);
-//            for (int j = 0; j < mvPatchCorners.size(); j++) {
-//                cv::Point2f pt_corner_raw = mvKeysRef[i].pt + mvPatchCorners[j];    // corner on raw image
-//                mat.at<float>(j,0) = pt_corner_raw.x;
-//                mat.at<float>(j,1) = pt_corner_raw.y;
-//            }
-//            mat = mat.reshape(2);
-//            cv::undistortPoints(mat, mat, mK, mDistCoef, cv::Mat(), mK);
-//            mat = mat.reshape(1);
-
             // Predict the four corners of the patch window
             for (int j = 0; j < mvPatchCorners.size(); j++) {
-//                cv::Point2f pt_corner_un(mat.at<float>(j,0), mat.at<float>(j,1));  // undistorted corner
                 cv::Point2f pt_corner_un(mvKeysRefUn[i].pt + mvPatchCorners[j]);
 
                 cv::Point2f pt_predict_corner_un;
@@ -209,9 +192,9 @@ int GyroAidedTracker::GyroPredictFeatures()
  * @param flow                  Optical Flow. flow = pt_redict - pt_ref
  */
 void GyroAidedTracker::GyroPredictOnePixel(cv::Point2f &pt_ref,
-                                             cv::Point2f &pt_predict,
-                                             cv::Point2f &pt_predict_distort,
-                                             cv::Point2f &flow)
+                                           cv::Point2f &pt_predict,
+                                           cv::Point2f &pt_predict_distort,
+                                           cv::Point2f &flow)
 {
     float x_normal, y_normal;
     // 2D pixel [u, v] --> normal [x_normal, y_normal]
@@ -227,9 +210,9 @@ void GyroAidedTracker::GyroPredictOnePixel(cv::Point2f &pt_ref,
         y_normal = (pt_ref.y - mcy) * mfy_inv;
     }
 
-   if(mPredictMethod == PIXEL_AWARE_PREDICTION){   // the proposed, considering pixel coordinates
+    if(mPredictMethod == PIXEL_AWARE_PREDICTION){   // the proposed, considering pixel coordinates
         // u2 = 1/(r3 * Kinv * u1 + t3) * K * R21 * Kinv * u1 + K * t21 / (r3 * Z1 * Kinv * u1 + t3)
-        // u2 approx 1/(r3 * Kinv * u1) * K * R21 * Kinv * u1
+        // ==> u2 approx 1/(r3 * Kinv * u1) * K * R21 * Kinv * u1
         float lambda = 1.0 / (mr31 * x_normal + mr32 * y_normal + mr33);
         float pt_x = (mKRKinv.at<float>(0,0) * pt_ref.x + mKRKinv.at<float>(0,1) * pt_ref.y + mKRKinv.at<float>(0,2)) * lambda;
         float pt_y = (mKRKinv.at<float>(1,0) * pt_ref.x + mKRKinv.at<float>(1,1) * pt_ref.y + mKRKinv.at<float>(1,2)) * lambda;
@@ -270,13 +253,10 @@ void GyroAidedTracker::GyroPredictOnePixel(cv::Point2f &pt_ref,
 
         flow = pt_predict - pt_ref; // optical flow on undistorted image
     }
-
-
 }
 
 int GyroAidedTracker::GyroPredictFeaturesAndOpticalFlowRefined()
 {
-    //Timer timer;
     /// Step 1: Predict features using gyroscope integrated rotation
     if (mbHasGyroPredictInitial)
         int n_predict_gyro = GyroPredictFeatures();     // default: true
@@ -289,7 +269,6 @@ int GyroAidedTracker::GyroPredictFeaturesAndOpticalFlowRefined()
             mvAffineDeformationMatrix[i] = cv::Mat::eye(2,2,CV_32F);
         }
     }
-    //timer.freshTimer();
 
     /// Step 2: For each gyro-perdicted points, use optical flow to refine its location.
     // for Opencv 3.4
@@ -306,12 +285,9 @@ int GyroAidedTracker::GyroPredictFeaturesAndOpticalFlowRefined()
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     mTimeCostOptFlow = std::chrono::duration_cast<std::chrono::duration<float> >(t2 - t1).count();
 
-    //timer.freshTimer();
 
     /// Step 3: Set patch matched results back to mvPredict and mvPredictUn.
     /// Step 3.1: Set thresholds for filtering out patch-matched refined pixels.
-    /// Descitption:
-
     std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
     int N = mvKeysRefUn.size();
 
@@ -331,13 +307,9 @@ int GyroAidedTracker::GyroPredictFeaturesAndOpticalFlowRefined()
     //               that have large pixel errors between the reference keypoints and the patch-matched results.
     double thPixelError = 4.0 * avgPixelError > mHalfPatchSize? 4.0 * avgPixelError: mHalfPatchSize;  // tolerate 3 times average pixel error.
 
-    //LOG(INFO) << "maxPixelError: " << maxPixelError << ", avgPixelError: " << avgPixelError << ", thPixelError: " << thPixelError;
-
     // thDistance: threshold for filtering out patch-matched predicted pixels
     //             that have large distance between gyro. predict results and patch-matched results.
-    double thDistance = mHalfPatchSize * 4.0; // 2.0
-    // 89209.923480, KFs: 969, Pred. 447, matched: 128
-    // only gyro-predict, Pred. 969, matched: 361
+    double thDistance = mHalfPatchSize * 4.0;
 
     /// Step 3.2: Filter out and set back to mvPredict, mvPtPredictUn, and mvStatus.
     maxPixelError = 0;
@@ -368,8 +340,6 @@ int GyroAidedTracker::GyroPredictFeaturesAndOpticalFlowRefined()
 
     return n_predict;
 }
-
-
 
 int GyroAidedTracker::TrackFeatures()
 {
@@ -407,7 +377,6 @@ int GyroAidedTracker::TrackFeatures()
 
         // distort points for display
         DistortVecPoints(mvPtPredictUn, mvPtPredict, mK, mDistCoef);
-
     }
     else if (mType == GYRO_PREDICT)
         n_predict = GyroPredictFeatures();
@@ -431,6 +400,7 @@ int GyroAidedTracker::TrackFeatures()
             mbRegularizationPenalty = false;
         }
         else if(mType == GYRO_PREDICT_WITH_OPTICAL_FLOW_REFINED_CONSIDER_ILLUMINATION_DEFORMATION) {
+            // Default
             mbHasGyroPredictInitial = true;
             mbConsiderIllumination = true;
             mbConsiderAffineDeformation = true;
@@ -460,7 +430,7 @@ int GyroAidedTracker::GeometryValidation()
 {
     Timer timer;
     std::vector<cv::Point2f> vPts1, vPts2;
-    std:vector<int> vIndeces;
+std:vector<int> vIndeces;
     for(size_t i = 0, iend = mvKeysRefUn.size(); i < iend; i++){
         if(mvStatus[i]){
             vIndeces.push_back(i);
@@ -524,7 +494,6 @@ int GyroAidedTracker::GeometryValidation()
        << ", recall rate: " << 100.0 * vPts1.size() / mN << "%"; // << std::endl;
     std::string msg1 = "T: " + std::to_string(mTimeStamp) + ", " + s1.str();
     SaveMsgToFile("trackFeatures.txt", msg1);
-    //    LOG(INFO) << msg1;
 
     std::stringstream s2;
     s2  << "Total FeatureTrack: " << mTImeCostTotalFeatureTrack
@@ -557,21 +526,17 @@ void GyroAidedTracker::IntegrateGyroMeasurements()
     // Consider the gap between the IMU timestamp and camera timestamp.
     for (int i = 0; i < n; i++) {
         float tstep;
-        // cv::Point3f acc;
         cv::Point3f angVel;
         if((i == 0) && (i < (n-1)))
         {
             float tab = mvImuFromLastFrame[i+1].t - mvImuFromLastFrame[i].t;
             float tini = mvImuFromLastFrame[i].t - mTimeStampRef;
-            //acc = (mvImuFromLastFrame[i].a + mvImuFromLastFrame[i+1].a -
-            //        (mvImuFromLastFrame[i+1].a - mvImuFromLastFrame[i].a) * (tini/tab)) * 0.5f;
             angVel = (mvImuFromLastFrame[i].w + mvImuFromLastFrame[i+1].w -
                     (mvImuFromLastFrame[i+1].w - mvImuFromLastFrame[i].w) * (tini/tab)) * 0.5f;
             tstep = mvImuFromLastFrame[i+1].t - mTimeStampRef;
         }
         else if(i < (n-1))
         {
-            //acc = (mvImuFromLastFrame[i].a + mvImuFromLastFrame[i+1].a) * 0.5f;
             angVel = (mvImuFromLastFrame[i].w + mvImuFromLastFrame[i+1].w) * 0.5f;
             tstep = mvImuFromLastFrame[i+1].t - mvImuFromLastFrame[i].t;
         }
@@ -579,25 +544,20 @@ void GyroAidedTracker::IntegrateGyroMeasurements()
         {
             float tab = mvImuFromLastFrame[i+1].t - mvImuFromLastFrame[i].t;
             float tend = mvImuFromLastFrame[i+1].t - mTimeStamp;
-            //acc = (mvImuFromLastFrame[i].a + mvImuFromLastFrame[i+1].a -
-            //        (mvImuFromLastFrame[i+1].a - mvImuFromLastFrame[i].a) * (tend / tab)) * 0.5f;
             angVel = (mvImuFromLastFrame[i].w + mvImuFromLastFrame[i+1].w -
                     (mvImuFromLastFrame[i+1].w - mvImuFromLastFrame[i].w) * (tend / tab)) * 0.5f;
             tstep = mTimeStamp - mvImuFromLastFrame[i].t;
         }
         else if((i == 0) && (i == (n-1)))
         {
-            //acc = mvImuFromLastFrame[i].a;
             angVel = mvImuFromLastFrame[i].w;
             tstep = mTimeStamp - mTimeStampRef;
         }
 
         dR_ref_cur *= IntegrateOneGyroMeasurement(angVel, tstep);
-
     }
 
     cv::Mat Rcl = mRbc.t() * dR_ref_cur.t() * mRbc;
-
     SetRcl(Rcl);
 }
 
@@ -607,11 +567,10 @@ cv::Mat GyroAidedTracker::IntegrateOneGyroMeasurement(cv::Point3f &gyro, double 
     const float y = (gyro.y - mBias.y) * dt;
     const float z = (gyro.z - mBias.z) * dt;
 
-    cv::Mat I = cv::Mat::eye(3, 3, CV_32F);
-
     const float d2 = x * x + y * y + z * z;
     const float d = std::sqrt(d2);
 
+    cv::Mat I = cv::Mat::eye(3, 3, CV_32F);
     cv::Mat W = (cv::Mat_<float>(3,3) << 0, -z, y,
                  z, 0, -x,
                  -y, x, 0);
@@ -637,9 +596,6 @@ float GyroAidedTracker::CheckHomography(
     cv::Mat mask;
     H21 =  cv::findHomography(vPts1, vPts2, cv::RANSAC, 3, mask);
     cv::Mat H12 = H21.inv();
-    // LOG(INFO) << "homogryphy_matrix is: " << endl << H21;
-
-    //    LOG(INFO) << "mask is: " << mask.cols << ", " << mask.rows << ", vPts1.size(): " << vPts1.size() << endl;
 
     const double h11 = H21.at<double>(0,0);
     const double h12 = H21.at<double>(0,1);
@@ -720,12 +676,7 @@ float GyroAidedTracker::CheckHomography(
         }
     }
 
-    //score = score / (cnt_sum + 1e-6);    // average score of inliers
-
-    // LOG(INFO) << "CheckHomography -- N: " << N << ", cnt_outlier: " << cnt_outlier << ", score_H: " << score;
-
     return score;
-
 }
 
 float GyroAidedTracker::CheckFundamental(
@@ -738,10 +689,6 @@ float GyroAidedTracker::CheckFundamental(
 {
     cv::Mat mask;
     F21 = cv::findFundamentalMat(vPts1, vPts2, CV_FM_RANSAC, 3., 0.99, mask);
-    //    cv::Mat E21 = mK.t() * F21 * mK;
-    //    cv::Mat R21, t21;
-    ////    cv::recoverPose(E21, vPts1, vPts2, mK, R21, t21);
-    //     LOG(INFO) << "F21: " << endl << F21 << ", mK: " << mK;
 
     const double f11 = F21.at<double>(0,0);
     const double f12 = F21.at<double>(0,1);
@@ -817,18 +764,9 @@ float GyroAidedTracker::CheckFundamental(
         }
     }
 
-    //score = score / (cnt_sum + 1e-6);  // average score of inliers
-
-    // LOG(INFO) << "CheckFundamental -- N: " << N << ", cnt_outlier: " << cnt_outlier << ", score_F: " << score;
-
     return score;
 }
 
-
-/*
- * usage: std::string msg = std::to_string(mTimeStamp) + " " + std::to_string(mTimeStampRef);
-          SaveMsgToFile("test.txt", msg);
-*/
 void GyroAidedTracker::SaveMsgToFile(std::string filename, std::string &msg)
 {
     std::ofstream fp(mSaveFolderPath + filename, ofstream::app);
@@ -1013,41 +951,27 @@ void GyroAidedTracker::MatchFeatures(
         const vector<vector<sMatch>> &vvNearNeighbors)
 {
     std::set<int> sFoundInCurPts;
-    int cnt_valid_neighbors = 0;
-    int cnt1 = 0, cnt2 = 0, cnt_wrong_match = 0, cnt3 = 0, cnt4 = 0, cnt5 = 0;
     for (int i = 0; i < mN; i++) {
         if (vvNearNeighbors[i].empty()) // no neighbors
             continue;
 
-        cnt_valid_neighbors ++;
-
         sMatch _m;
         if (mbNCC)  // Using the NCC score to choose the neighbor that is most similar to the reference keypoint (Default: true).
         {
-            if (vvNearNeighbors[i][0].ncc > TH_NCC_HIGH) {   // 0.85
-                cnt4 ++;
+            if (vvNearNeighbors[i][0].ncc > TH_NCC_HIGH)    // 0.85
                 _m = vvNearNeighbors[i][0];
-            }
             else if (vvNearNeighbors[i].size() > 1) {
-                if (vvNearNeighbors[i][0].ncc < TH_NCC_LOW){ // 0.65
-                    cnt1 ++;
+                if (vvNearNeighbors[i][0].ncc < TH_NCC_LOW) // 0.65
                     continue;
-                }
 
                 sMatch _m0 = vvNearNeighbors[i][0], _m1 = vvNearNeighbors[i][1];
-                if (_m1.ncc < _m0.ncc * TH_RATIO) {   // If the two matches are not too similar
+                if (_m1.ncc < _m0.ncc * TH_RATIO)    // If the two matches are not too similar
                     _m = _m0;
-                    cnt5 ++;
-                }
-                else { // Else the two matches are too similar, reject
-                    cnt2 ++;
+                else // Else the two matches are too similar, reject
                     continue;
-                }
             }
-            else{
-                cnt3 ++;
+            else
                 continue;
-            }
         }
         else    // Using the Euclidean distance to choose the neighbor that is closest to the predicted points on current frame.
         {
@@ -1060,9 +984,9 @@ void GyroAidedTracker::MatchFeatures(
                 else                // Else too close, reject
                     continue;
             }
-            else {    // no neighbors
+            else     // no neighbors
                 continue;
-            }
+
         }
 
         ///////////////////////
@@ -1073,18 +997,14 @@ void GyroAidedTracker::MatchFeatures(
         else {
             // Wrong match: This keypoint in the current frame has been matched.
             // We delete the previous matches and prohibit the matches to this keypoint
-            cnt_wrong_match ++; // current wrong match cnt + 1
             std::vector<sMatch>::iterator it = vMatches.begin();
             while (it != vMatches.end()) {
-                if (it->trainIdx == _m.trainIdx){
+                if (it->trainIdx == _m.trainIdx)
                     it = vMatches.erase(it);
-                    cnt_wrong_match ++; // historical wrong match cnt
-                }
                 else
                     it ++;
             }
         }
-
     }
 }
 
@@ -1113,12 +1033,10 @@ int GyroAidedTracker::SearchByOpencvKLT()
     });
 
     // opencv optical flow tracking
-    //cv::Size winSize = cv::Size(21,21);  // 21, 21 performs well
     cv::Size winSize = cv::Size(2 * mHalfPatchSize + 1, 2 * mHalfPatchSize + 1);
-    int maxLevel = 2;   // 3
+    int maxLevel = 2;
     cv::TermCriteria criteria = cv::TermCriteria(TermCriteria::COUNT+TermCriteria::EPS, 30, 0.01);
-    // TODO: test OPTFLOW_USE_INITIAL_FLOW
-    int flags = 0; //cv::OPTFLOW_USE_INITIAL_FLOW;
+    int flags = 0;
     double minEigThreshold = 1e-4;
     cv::calcOpticalFlowPyrLK(mImgGrayRef, mImgGrayCur, pt_ref_detected, mvPtPredict,
                              mvStatus, mvError, winSize, maxLevel, criteria, flags, minEigThreshold);
@@ -1182,9 +1100,6 @@ int GyroAidedTracker::SearchByOpencvKLT()
             mvDisparities.push_back(disp);
             sumDisparity_1 += disp;
             maxDisparity_1 = disp > maxDisparity_1? disp : maxDisparity_1;
-
-            // std::cout << "pt_ref: (" <<
-            // printf("index: %d, pt_ref: (%f, %f), pt_cur: (%f, %f), disp: %f \n", (int)vDisparities.size(), pt_ref.x, pt_ref.y, pt_cur.x, pt_cur.y, float(disp));
 
             found_in_cur_pts.insert(_m.trainIdx);
         }

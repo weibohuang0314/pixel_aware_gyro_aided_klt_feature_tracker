@@ -1,3 +1,25 @@
+/**
+* This file is part of pixel_aware_gyro_aided_klt_feature_tracker.
+*
+* Copyright (C) 2015-2022 Weibo Huang <weibohuang@pku.edu.cn> (Peking University)
+* For more information see <https://gitee.com/weibohuang/pixel_aware_gyro_aided_klt_feature_tracker>
+* or <https://github.com/weibohuang/pixel_aware_gyro_aided_klt_feature_tracker>
+*
+* pixel_aware_gyro_aided_klt_feature_tracker is a free software:
+* you can redistribute it and/or modify it under the terms of the GNU General
+* Public License as published by the Free Software Foundation, either version 3
+* of the License, or (at your option) any later version.
+*
+* pixel_aware_gyro_aided_klt_feature_tracker is distributed in the hope that
+* it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with pixel_aware_gyro_aided_klt_feature_tracker.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include "frame.h"
 #include "../Thirdparty/glog/include/glog/logging.h"
 #include "utils.h"
@@ -69,9 +91,6 @@ Frame::Frame(double &t, cv::Mat &im, cv::Mat &im_dist, Frame* pLastFrame, Camera
     mRcl = cv::Mat();
 
     curFrameWithoutGeometryValid = nullptr;
-
-//    DetectKeyPoints();
-    //LOG(INFO) << "t: " << std::to_string(mTimeStamp) << ", mvKeysUn.size(): " << mvKeysUn.size();
 }
 
 void Frame::Reset()
@@ -198,72 +217,10 @@ void Frame::DetectKeyPoints(ORB_SLAM2::ORBextractor* pORBextractor)
     mN = mvKeysUn.size();
 }
 
-/*// Default. detect new feature when the predicted features is less than a threshold.
-void Frame::DetectKeyPoints()
-{
-    SetPredictKeyPointsAndMask();
-    int num_predicted = mvKeysUn.size();
 
-    static bool reach_max_feature_flag = false; // ensure to detect max feature
-    static int cnt = 0;
-
-    // We detected new featrues only when the predicted features is less than a threshold.
-    if(num_predicted < mThresholdOfPredictNewKeyPoint || !reach_max_feature_flag)
-    {
-        std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-
-        int block_size = 3;
-        double min_distance = 10; //20;       // klt_imu_tracker: 20
-        double quality_level = 0.001; //0.005;    // klt_imu_tracker: 0.005
-        int n_new = mN - num_predicted;                 // TODO: dynamic adjust the n_new according to the tracked results
-        std::vector<cv::Point2f> corners_un;
-
-        if (n_new > 0)
-            cv::goodFeaturesToTrack(mGray, corners_un, n_new, quality_level, min_distance, mMask, block_size, true, 0.04);
-
-        std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();    // start timer
-        double timeOfDetectGoodFeatures = 1000 * std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
-
-
-        for (auto pt: corners_un) {
-            mvKeysUn.push_back(cv::KeyPoint(pt, 0));
-            mvPtIndexInLastFrame.push_back(-1);
-            float x_normal = (pt.x - mcx) * mfx_inv;
-            float y_normal = (pt.y - mcy) * mfy_inv;
-            mvKeysNormal.push_back(cv::KeyPoint(x_normal, y_normal, 1));
-        }
-
-        // Distort points
-        std::vector<cv::Point2f> corners_dist;
-        DistortVecPoints(corners_un, corners_dist, mpCameraParams->mK, mpCameraParams->mDistCoef);
-        for(size_t i = 0, iend = corners_dist.size(); i < iend; i++){
-            mvKeys.push_back(cv::KeyPoint(corners_dist[i], 0));
-        }
-
-        std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();    // start timer
-        double timeOfDistortPoints = 1000 * std::chrono::duration_cast<std::chrono::duration<double> >(t3 - t2).count();
-
-        LOG(INFO) << "detect new keypoint: num_predicted: " << num_predicted << ", n_new: " << n_new
-                  << ", corners_un.size(): " << corners_un.size()
-                  << ", mvKeysUn.size(): " << mvKeysUn.size();
-        //LOG(INFO) << "timeOfDetectGoodFeatures: " << timeOfDetectGoodFeatures
-        //          << ", timeOfDistortPoints: " << timeOfDistortPoints;
-
-        reach_max_feature_flag = false;
-        if(mvKeysUn.size() == mN)
-            reach_max_feature_flag = true;
-        cnt = 0;
-    }
-
-    mN = mvKeysUn.size();
-}*/
-
-// temp: read features from file. the feature is detected by SuperPoint (Paper - "SuperPoint: Self-supervised interest point detection and description")
+// Load features from file. the feature is detected by SuperPoint (Paper - "SuperPoint: Self-supervised interest point detection and description")
 void Frame::LoadDetectedKeypointFromFile(std::string path)
 {
-    // predict from gyro-aided tracking
-    //SetPredictKeyPointsAndMask();
-
     // read features detect by SuperPoint
     std::vector<cv::Point2f> vNewPts; vNewPts.reserve(mN);
     std::ifstream fin(path.c_str());
@@ -278,10 +235,8 @@ void Frame::LoadDetectedKeypointFromFile(std::string path)
             std::string field;
             while (getline(sin, field, ',')) {
                 data.push_back(std::atof(field.c_str()));
-                //std::cout << field << std::endl;
             }
             vNewPts.push_back(cv::Point2f(data[1], data[2]));
-            //std::cout << line << std::endl;
         }
     }
     fin.close();
@@ -320,7 +275,6 @@ void Frame::LoadDetectedKeypointFromFile(std::string path)
         reach_max_feature_flag = false;
         if(mvKeysUn.size() >= mN)
             reach_max_feature_flag = true;
-
     }
 
     mN = mvKeysUn.size();
@@ -426,9 +380,7 @@ void Frame::Display(std::string winname, int drawFlowType, bool bDrawPatch, bool
     int circle_radius = 2;
     int circle_thickness = -1;
     int line_thickness = 1;
-
     int cnt_total_tracks = 0, cnt_good_tracks = 0, cnt_bad_tracks = 0;
-
 
     // draw the gyro predicd and patch-matched features that do not filter out by geometry validation
     for(size_t i = 0, iend = curFrameWithoutGeometryValid->mvStatus.size(); i < iend; i++){
@@ -517,7 +469,6 @@ void Frame::Display(std::string winname, int drawFlowType, bool bDrawPatch, bool
     for (size_t i = 0, iend = vTxt.size(); i < iend; i++) {
         cv::putText(imText, vTxt[i], cv::Point(int(8*sc) + w + margin, Ht*(i+1)), cv::FONT_HERSHEY_DUPLEX, 1.0*sc, txt_color_bg, 2.0, cv::LINE_AA);
         cv::putText(imText, vTxt[i], cv::Point(int(8*sc) + w + margin, Ht*(i+1)), cv::FONT_HERSHEY_DUPLEX, 1.0*sc, txt_color_fg, 1.0, cv::LINE_AA);
-
     }
 
     cv::imshow(winname, imText);

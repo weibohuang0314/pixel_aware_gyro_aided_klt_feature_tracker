@@ -1,11 +1,31 @@
+/**
+* This file is part of pixel_aware_gyro_aided_klt_feature_tracker.
+*
+* Copyright (C) 2015-2022 Weibo Huang <weibohuang@pku.edu.cn> (Peking University)
+* For more information see <https://gitee.com/weibohuang/pixel_aware_gyro_aided_klt_feature_tracker>
+* or <https://github.com/weibohuang/pixel_aware_gyro_aided_klt_feature_tracker>
+*
+* pixel_aware_gyro_aided_klt_feature_tracker is a free software:
+* you can redistribute it and/or modify it under the terms of the GNU General
+* Public License as published by the Free Software Foundation, either version 3
+* of the License, or (at your option) any later version.
+*
+* pixel_aware_gyro_aided_klt_feature_tracker is distributed in the hope that
+* it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with pixel_aware_gyro_aided_klt_feature_tracker.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include "patch_match.h"
 #include "gyro_aided_tracker.h"
 #include <thread>
 #include <pthread.h>
 #include <omp.h>
 #include "utils.h"
-
-//namespace ORB_SLAM3{
 
 typedef Eigen::Matrix<double, 5, 1> Vector5d;
 typedef Eigen::Matrix<double, 5, 5> Matrix5d;
@@ -29,7 +49,6 @@ PatchMatch::PatchMatch(GyroAidedTracker* pMatcher_,
     mAlpha = 0.5f;
     mMaxDistance = 25;
     mInvLogMaxDist = 1.0 / (std::log(mAlpha * mMaxDistance + 1));
-
 
     // parameters for multi level
     mPyramidScale = 0.5f;

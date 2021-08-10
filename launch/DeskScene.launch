@@ -1,17 +1,14 @@
 <launch>
-<!--MH_01_easy MH_02_easy MH_03_medium MH_04_difficult MH_05_difficult V1_01_easy V1_02_medium V1_03_difficult V2_01_easy V2_02_medium V2_03_difficult  -->
-        <arg name="rosBag" default = "/home/hri/Documents/SLAM_Dataset/data_desk_scene/desk_scene.bag" />
-        <arg name="config_file" default = "$(find gyro_predict_matcher)/config/data_desk_scene.yaml" />
+    <arg name="rosBag" default = "/home/hri/Documents/SLAM_Dataset/data_desk_scene/desk_scene.bag" />
+    <arg name="config_file" default = "$(find gyro_predict_matcher)/config/data_desk_scene.yaml" />
 
-        <!-- set timedelay from bash input -->
-        <arg name="manuallyAddTimeDelay" default = "0.000" />
-        <!--<arg name="output_file" default = "/../output/timedelay_effect/TD_$(arg manuallyAddTimeDelay)/" />-->
-        <arg name="output_file" default = "/../output/" />
+    <!-- set timedelay from bash input -->
+    <arg name="manuallyAddTimeDelay" default = "0.000" />
+    <arg name="output_file" default = "/../output/" />
 
-        <node pkg="gyro_predict_matcher" type="gyro_predict_and_feature_detect_node" name="gyro_predict_and_feature_detect_node"  args="$(arg config_file)" cwd="node" output="screen">
-            <param name="rosBag" type="string" value="$(arg rosBag)" />
-            <param name="manuallyAddTimeDelay" type="double" value="$(arg manuallyAddTimeDelay)" />
-            <param name="output_file" type="string" value="$(arg output_file)" />
-
-        </node>
+    <node pkg="gyro_predict_matcher" type="gyro_predict_and_feature_detect_node" name="gyro_predict_and_feature_detect_node"  args="$(arg config_file)" cwd="node" output="screen">
+        <param name="rosBag" type="string" value="$(arg rosBag)" />
+        <param name="manuallyAddTimeDelay" type="double" value="$(arg manuallyAddTimeDelay)" />
+        <param name="output_file" type="string" value="$(arg output_file)" />
+    </node>
 </launch>

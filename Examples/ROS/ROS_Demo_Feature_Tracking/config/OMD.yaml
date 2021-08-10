@@ -4,9 +4,9 @@
 # ROS topics
 #--------------------------------------------------------------------------------------------
 imuTopic: "/OMD/imu0"
-leftImageTopic: "/OMD/cam0/image_raw" #"/camera/color/image_raw"
+leftImageTopic: "/OMD/cam0/image_raw"
 
-# readFromRosBag: 0   # 1: read from rosbag; 0: subscribe from rosbag (you should 'rosbag play ...')
+readFromRosBag: 0   # 1: read from rosbag; 0: subscribe from rosbag (you should 'rosbag play ...')
 # rosBag: ""
 
 #--------------------------------------------------------------------------------------------
@@ -16,13 +16,6 @@ downSampleRate: 1  # default: 1
 KeyPointNumber: 512
 ThresholdOfPredictNewKeyPoint: 1.0
 HalfPatchSize: 5
-
-#--------------------------------------------------------------------------------------------
-# used for publisher_node!
-#--------------------------------------------------------------------------------------------
-dataset: "OMD"
-DatasetDir: "/home/hri/Documents/SLAM_Dataset/OMD/Primary_Data_Segments/occlusion_2_unconstrained"
-IMUCsvFile:   "/home/hri/Documents/SLAM_Dataset/OMD/Primary_Data_Segments/occlusion_2_unconstrained/imu.csv"
 
 #--------------------------------------------------------------------------------------------
 # Camera Parameters. Adjust them!

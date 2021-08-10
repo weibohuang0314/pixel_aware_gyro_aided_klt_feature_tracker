@@ -1,3 +1,25 @@
+/**
+* This file is part of pixel_aware_gyro_aided_klt_feature_tracker.
+*
+* Copyright (C) 2015-2022 Weibo Huang <weibohuang@pku.edu.cn> (Peking University)
+* For more information see <https://gitee.com/weibohuang/pixel_aware_gyro_aided_klt_feature_tracker>
+* or <https://github.com/weibohuang/pixel_aware_gyro_aided_klt_feature_tracker>
+*
+* pixel_aware_gyro_aided_klt_feature_tracker is a free software:
+* you can redistribute it and/or modify it under the terms of the GNU General
+* Public License as published by the Free Software Foundation, either version 3
+* of the License, or (at your option) any later version.
+*
+* pixel_aware_gyro_aided_klt_feature_tracker is distributed in the hope that
+* it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with pixel_aware_gyro_aided_klt_feature_tracker.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #ifndef UTILS_H
 #define UTILS_H
 
@@ -41,8 +63,8 @@ float NCC(int halfPathSize, const cv::Mat &ref, const cv::Mat &cur, const cv::Po
 #define GREEN "\033[32m" /* Green */
 #define YELLOW "\033[33m" /* Yellow */
 #define BLUE "\033[34m" /* Blue */
-#define MAGENTA "\033[35m" /* Magenta 品红*/
-#define CYAN "\033[36m" /* Cyan 青色 */
+#define MAGENTA "\033[35m" /* Magenta*/
+#define CYAN "\033[36m" /* Cyan */
 #define WHITE "\033[37m" /* White */
 #define BOLDBLACK "\033[1m\033[30m" /* Bold Black */
 #define BOLDRED "\033[1m\033[31m" /* Bold Red */
@@ -54,15 +76,12 @@ float NCC(int halfPathSize, const cv::Mat &ref, const cv::Mat &cur, const cv::Po
 #define BOLDWHITE "\033[1m\033[37m" /* Bold White */
 
 /*
- * 在构造函数中记录当前的系统时间，在析构函数中输出当前的系统时间与之前的差，精度是us
- * 使用方法：在需要计时的程序段之前构造类对象，在程序段之后获取时间
  * example:
- *		 Timer time; //开始计时
+ *		 Timer time; // time recording
  *		 ....
- *		 printf("time: %d us\n", time.runTime()); //显示时间
+ *		 printf("time: %d us\n", time.runTime());
 
 */
-// 计时
 #include <stdio.h>
 #include <sys/time.h>
 class Timer
@@ -70,7 +89,7 @@ class Timer
     public:
 
         struct timeval start, end;
-        Timer() // 构造函数，开始记录时间
+        Timer()
         {
             gettimeofday( &start, NULL );
         }

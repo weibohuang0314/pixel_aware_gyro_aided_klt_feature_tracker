@@ -1,18 +1,22 @@
 /**
-* This file is part of ORB-SLAM3
+* This file is part of pixel_aware_gyro_aided_klt_feature_tracker.
 *
-* Copyright (C) 2017-2020 Carlos Campos, Richard Elvira, Juan J. Gómez Rodríguez, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
-* Copyright (C) 2014-2016 Raúl Mur-Artal, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
+* Copyright (C) 2015-2022 Weibo Huang <weibohuang@pku.edu.cn> (Peking University)
+* For more information see <https://gitee.com/weibohuang/pixel_aware_gyro_aided_klt_feature_tracker>
+* or <https://github.com/weibohuang/pixel_aware_gyro_aided_klt_feature_tracker>
 *
-* ORB-SLAM3 is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
-* License as published by the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
+* pixel_aware_gyro_aided_klt_feature_tracker is a free software:
+* you can redistribute it and/or modify it under the terms of the GNU General
+* Public License as published by the Free Software Foundation, either version 3
+* of the License, or (at your option) any later version.
 *
-* ORB-SLAM3 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
-* the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+* pixel_aware_gyro_aided_klt_feature_tracker is distributed in the hope that
+* it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 * GNU General Public License for more details.
 *
-* You should have received a copy of the GNU General Public License along with ORB-SLAM3.
+* You should have received a copy of the GNU General Public License
+* along with pixel_aware_gyro_aided_klt_feature_tracker.
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
@@ -88,8 +92,8 @@ cv::Mat LogSO3(const cv::Mat &R)
 {
     const float tr = R.at<float>(0,0)+R.at<float>(1,1)+R.at<float>(2,2);
     cv::Mat w = (cv::Mat_<float>(3,1) <<(R.at<float>(2,1)-R.at<float>(1,2))/2,
-                                        (R.at<float>(0,2)-R.at<float>(2,0))/2,
-                                        (R.at<float>(1,0)-R.at<float>(0,1))/2);
+                 (R.at<float>(0,2)-R.at<float>(2,0))/2,
+                 (R.at<float>(1,0)-R.at<float>(0,1))/2);
     const float costheta = (tr-1.0f)*0.5f;
     if(costheta>1 || costheta<-1)
         return w;
@@ -110,13 +114,10 @@ cv::Mat RightJacobianSO3(const float &x, const float &y, const float &z)
                  z, 0, -x,
                  -y,  x, 0);
     if(d<eps)
-    {
         return cv::Mat::eye(3,3,CV_32F);
-    }
+
     else
-    {
         return I - W*(1.0f-cos(d))/d2 + W*W*(d-sin(d))/(d2*d);
-    }
 }
 
 cv::Mat RightJacobianSO3(const cv::Mat &v)
@@ -133,13 +134,9 @@ cv::Mat InverseRightJacobianSO3(const float &x, const float &y, const float &z)
                  z, 0, -x,
                  -y,  x, 0);
     if(d<eps)
-    {
         return cv::Mat::eye(3,3,CV_32F);
-    }
     else
-    {
         return I + W/2 + W*W*(1.0f/d2 - (1.0f+cos(d))/(2.0f*d*sin(d)));
-    }
 }
 
 cv::Mat InverseRightJacobianSO3(const cv::Mat &v)
@@ -264,8 +261,8 @@ void Preintegrated::IntegrateNewMeasurement(const cv::Point3f &acceleration, con
     avgW = (dT*avgW + gyroW*dt)/(dT+dt);
 
     cv::Mat accHat = (cv::Mat_<float>(3,3) << 0, -acc.at<float>(2), acc.at<float>(1),
-                                                   acc.at<float>(2), 0, -acc.at<float>(0),
-                                                   -acc.at<float>(1), acc.at<float>(0), 0);
+                      acc.at<float>(2), 0, -acc.at<float>(0),
+                      -acc.at<float>(1), acc.at<float>(0), 0);
 
     IntegratedRotation dRi(angVel,b,dt);
 

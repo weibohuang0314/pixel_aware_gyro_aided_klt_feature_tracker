@@ -1,16 +1,26 @@
 /**
-* This file is added by xiefei2929@126.com
+* This file is part of pixel_aware_gyro_aided_klt_feature_tracker.
+*
+* Copyright (C) 2015-2022 Weibo Huang <weibohuang@pku.edu.cn> (Peking University)
+* For more information see <https://gitee.com/weibohuang/pixel_aware_gyro_aided_klt_feature_tracker>
+* or <https://github.com/weibohuang/pixel_aware_gyro_aided_klt_feature_tracker>
+*
+* pixel_aware_gyro_aided_klt_feature_tracker is a free software:
+* you can redistribute it and/or modify it under the terms of the GNU General
+* Public License as published by the Free Software Foundation, either version 3
+* of the License, or (at your option) any later version.
+*
+* pixel_aware_gyro_aided_klt_feature_tracker is distributed in the hope that
+* it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with pixel_aware_gyro_aided_klt_feature_tracker.
+* If not, see <http://www.gnu.org/licenses/>.
 */
 
-//#include <ros/ros.h>
-//#include <rosbag/bag.h>
-//#include <rosbag/view.h>
-//#include <cv_bridge/cv_bridge.h>
-//#include <message_filters/subscriber.h>
-//#include <std_msgs/Header.h>
-//#include <sensor_msgs/Imu.h>
 #include <boost/foreach.hpp>
-
 #include <iostream>
 #include <algorithm>
 #include <fstream>
@@ -22,7 +32,6 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/opencv.hpp>
 
-//#include "Thirdparty/glog/include/glog/logging.h"
 #include "glog/logging.h"
 
 #include "frame.h"
@@ -55,14 +64,12 @@ ORB_SLAM2::ORBextractor *pORBextractorLeft, *pORBextractorRight;
 
 std::vector<std::pair<double, std::string>> vpTimeCorrespondens;
 
-
 void setFrameWithoutGeometryValid(Frame& frame, GyroAidedTracker& matcher)
 {
     curFrameWithoutGeometryValid = Frame(frame);
     matcher.SetBackToFrame(curFrameWithoutGeometryValid);
     frame.SetCurFrameWithoutGeometryValid(&curFrameWithoutGeometryValid);
 }
-
 
 bool getNextFrame()
 {
@@ -91,7 +98,6 @@ bool getNextFrame()
     return false;
 }
 
-//bool getIMUMeasurements(double t1, double t2, vector<IMU::Point> &vImus)
 bool getNextIMU(IMU::Point &imu)
 {
     static string IMUCsvFile;

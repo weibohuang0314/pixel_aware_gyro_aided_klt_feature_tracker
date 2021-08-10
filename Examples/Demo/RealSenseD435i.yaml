@@ -7,7 +7,7 @@ outputFile: "/output/"
 #--------------------------------------------------------------------------------------------
 # Paramters!
 #--------------------------------------------------------------------------------------------
-downSampleRate: 1  # default: 1
+downSampleRate: 1  # useless
 KeyPointNumber: 500
 ThresholdOfPredictNewKeyPoint: 1.0
 HalfPatchSize: 5

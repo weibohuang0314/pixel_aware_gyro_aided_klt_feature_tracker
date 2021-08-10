@@ -1,4 +1,25 @@
 /**
+* This file is part of pixel_aware_gyro_aided_klt_feature_tracker.
+*
+* Copyright (C) 2015-2022 Weibo Huang <weibohuang@pku.edu.cn> (Peking University)
+* For more information see <https://gitee.com/weibohuang/pixel_aware_gyro_aided_klt_feature_tracker>
+* or <https://github.com/weibohuang/pixel_aware_gyro_aided_klt_feature_tracker>
+*
+* pixel_aware_gyro_aided_klt_feature_tracker is a free software:
+* you can redistribute it and/or modify it under the terms of the GNU General
+* Public License as published by the Free Software Foundation, either version 3
+* of the License, or (at your option) any later version.
+*
+* pixel_aware_gyro_aided_klt_feature_tracker is distributed in the hope that
+* it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with pixel_aware_gyro_aided_klt_feature_tracker.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+/**
 * This file is part of ORB-SLAM2.
 *
 * Copyright (C) 2014-2016 Raúl Mur-Artal <raulmur at unizar dot es> (University of Zaragoza)
@@ -44,9 +65,6 @@ public:
 
 class ORBextractor
 {
-/********************************************************************************/
-/**************************** for VI-ORB_SLAM2 Start ****************************/
-/********************************************************************************/
 public:
     double GetTimeOfComputePyramid(void) { return mTimeOfComputePyramid; }
     double GetTimeOfComputeKeyPointsOctTree(void) { return mTimeOfComputeKeyPointsOctTree; }
@@ -56,11 +74,6 @@ private:
     double mTimeOfComputePyramid;
     double mTimeOfComputeKeyPointsOctTree;
     double mTimeOfComputeDescriptor;
-
-
-/********************************************************************************/
-/***************************** for VI-ORB_SLAM2 End *****************************/
-/********************************************************************************/
 
 public:
     
@@ -75,9 +88,10 @@ public:
     // ORB are dispersed on the image using an octree.
     // Mask is ignored in the current implementation.
     void operator()( cv::InputArray image, cv::InputArray mask,
-      std::vector<cv::KeyPoint>& keypoints,
-      cv::OutputArray descriptors);
+                     std::vector<cv::KeyPoint>& keypoints,
+                     cv::OutputArray descriptors);
 
+    // Only detect ORB features. -- add by Weibo Huang
     void DetectFeatures(cv::InputArray image, cv::InputArray mask,
                         std::vector<cv::KeyPoint>& keypoints);
 
@@ -108,9 +122,9 @@ public:
 protected:
 
     void ComputePyramid(cv::Mat image);
-    void ComputeKeyPointsOctTree(std::vector<std::vector<cv::KeyPoint> >& allKeypoints);    
+    void ComputeKeyPointsOctTree(std::vector<std::vector<cv::KeyPoint> >& allKeypoints);
     std::vector<cv::KeyPoint> DistributeOctTree(const std::vector<cv::KeyPoint>& vToDistributeKeys, const int &minX,
-                                           const int &maxX, const int &minY, const int &maxY, const int &nFeatures, const int &level);
+                                                const int &maxX, const int &minY, const int &maxY, const int &nFeatures, const int &level);
 
     void ComputeKeyPointsOld(std::vector<std::vector<cv::KeyPoint> >& allKeypoints);
     std::vector<cv::Point> pattern;
@@ -126,7 +140,7 @@ protected:
     std::vector<int> umax;
 
     std::vector<float> mvScaleFactor;
-    std::vector<float> mvInvScaleFactor;    
+    std::vector<float> mvInvScaleFactor;
     std::vector<float> mvLevelSigma2;
     std::vector<float> mvInvLevelSigma2;
 };
