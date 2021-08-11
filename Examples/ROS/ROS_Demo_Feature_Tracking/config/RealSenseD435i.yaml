@@ -54,4 +54,4 @@ IMU.NoiseGyro: 0.005       # rad/s/sqrt(Hz)
 IMU.NoiseAcc: 0.1     # m/s^2/sqrt(Hz)
 IMU.GyroWalk: 0.0002    # rad/s^2/sqrt(Hz)
 IMU.AccWalk: 0.005     # m/s^3/sqrt(Hz)
-IMU.Frequency: 200
+IMU.Frequency: 250
