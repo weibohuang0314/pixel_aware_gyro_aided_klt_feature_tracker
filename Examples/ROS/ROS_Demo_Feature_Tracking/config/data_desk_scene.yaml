@@ -6,16 +6,16 @@
 imuTopic: "/desk_scene/imu0"
 leftImageTopic: "/desk_scene/cam0/image_raw"
 
-readFromRosBag: 0   # 1: read from rosbag; 0: subscribe from rosbag (you should 'rosbag play ...')
+readFromRosBag: 1   # 1: read from rosbag; 0: subscribe from rosbag (you should 'rosbag play ...')
 # rosBag: ""
 
 #--------------------------------------------------------------------------------------------
 # Paramters!
 #--------------------------------------------------------------------------------------------
-downSampleRate: 1  # default: 1
+downSampleRate: 2  # default: 1
 KeyPointNumber: 500
 ThresholdOfPredictNewKeyPoint: 1.0
-HalfPatchSize: 10
+HalfPatchSize: 5
 
 #--------------------------------------------------------------------------------------------
 # Camera Parameters. Adjust them!
